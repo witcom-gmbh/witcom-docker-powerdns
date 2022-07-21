@@ -2,7 +2,7 @@ PROJECT_NAME=pdns
 
 include ../Makefile.docker
 
-DOCKER_TAG         ?= $(PDNS_AUTH_RELEASE)
+DOCKER_TAG         = $(PDNS_AUTH_RELEASE)
 DOCKER_BUILD_ARGS  ?= --build-arg PDNS_AUTH_RELEASE=$(PDNS_AUTH_RELEASE)
 
 docker_build: docker_build_default
