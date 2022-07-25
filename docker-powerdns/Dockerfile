@@ -1,8 +1,9 @@
-FROM alpine:3.9
-MAINTAINER Carsten Buchberger <c.buchberger@witcom.de>
+FROM alpine:3.15
+LABEL maintainer="Carsten Buchberger <c.buchberger@witcom.de>"
 
-ENV REFRESHED_AT="2020-09-07" \
-    POWERDNS_VERSION="4.3.0" \
+ARG PDNS_AUTH_RELEASE
+
+ENV POWERDNS_VERSION=$PDNS_AUTH_RELEASE \
     PDNS_socket_dir=/var/run \
     PDNS_master=yes \
     PDNS_daemon=no \ 
@@ -28,8 +29,9 @@ RUN apk --update add bash libpq sqlite-libs libstdc++ libgcc mariadb-client mari
     chgrp -R 0 /var/run && \
     chmod -R g+rwX /var/run && \
     setcap 'cap_net_bind_service=+ep' /usr/sbin/pdns_server && \
-    cp /usr/lib/libboost_program_options-mt.so* /tmp && \
+    cp /usr/lib/libboost_program_options.so* /tmp && \
     apk del --purge build-deps && \
+    apk add boost-libs && \
     mv /tmp/lib* /usr/lib/ && \
     rm -rf /tmp/pdns-$POWERDNS_VERSION /var/cache/apk/*
 
