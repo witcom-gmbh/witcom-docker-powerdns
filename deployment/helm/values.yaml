@@ -133,6 +133,7 @@ pdns:
         secretAccessKey: 
     init:
       enabled: true
+      baseline: "false"
       image:
         repository: powerdns/pdns-gmysql-init
         pullPolicy: IfNotPresent

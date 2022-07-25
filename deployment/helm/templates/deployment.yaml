@@ -30,8 +30,11 @@ spec:
       serviceAccountName: {{ include "powerdns-pdns.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{ if .Values.pdns.database.init.enabled -}}
       initContainers:
         - env:
+            - name: FLYWAY_BASELINE_ON_MIGRATE
+              value: {{ .Values.pdns.database.init.baseline | quote }}
             - name: FLYWAY_DBHOST
               value: {{ .Values.pdns.database.host }}
             - name: FLYWAY_DBNAME
@@ -46,6 +49,7 @@ spec:
           image: "{{ .Values.pdns.database.init.image.repository }}:{{ .Values.pdns.database.init.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.pdns.database.init.image.pullPolicy }}
           name: init-powerdns-db
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
