@@ -1,7 +1,6 @@
-FROM flyway/flyway
+FROM flyway/flyway:7.4
 
-ENV REFRESHED_AT="2020-09-07" \
-    FLYWAY_DRIVER="org.mariadb.jdbc.Driver" \
+ENV FLYWAY_DRIVER="org.mariadb.jdbc.Driver" \
     FLYWAY_DBTYPE=mysql \
     FLYWAY_DBHOST=localhost \
     FLYWAY_DBPORT=3306 \

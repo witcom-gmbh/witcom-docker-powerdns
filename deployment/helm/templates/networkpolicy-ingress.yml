@@ -1,0 +1,99 @@
+{{- if and .Values.networkPolicy.enabled (or .Values.networkPolicy.metrics.enabled (or .Values.networkPolicy.ingressRules.pdnsWebAccessOnlyFrom.enabled (or .Values.networkPolicy.ingressRules.pdnsTcpAccessOnlyFrom.enabled .Values.networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.enabled) ) ) }}
+apiVersion: {{ include "common.capabilities.networkPolicy.apiVersion" . }}
+kind: NetworkPolicy
+metadata:
+  name: {{ printf "%s-np-ingress" (include "powerdns-pdns.fullname" .) }}
+  labels:
+    {{- include "powerdns-pdns.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "powerdns-pdns.selectorLabels" . | nindent 6 }}
+  ingress:
+    #ingress rule for metrics
+    {{- if and .Values.serviceMonitor.enabled .Values.networkPolicy.metrics.enabled (or .Values.networkPolicy.metrics.namespaceSelector .Values.networkPolicy.metrics.podSelector) }}
+    - from:
+        {{- if .Values.networkPolicy.metrics.namespaceSelector }}
+        - namespaceSelector:
+            matchLabels:
+              {{- include "common.tplvalues.render" (dict "value" .Values.networkPolicy.metrics.namespaceSelector "context" $) | nindent 14 }}
+        {{ else }}     
+        - namespaceSelector: {} 
+        {{- end }}
+        {{- if .Values.networkPolicy.metrics.podSelector }}
+        - podSelector:
+            matchLabels:
+              {{- include "common.tplvalues.render" (dict "value" .Values.networkPolicy.metrics.podSelector "context" $) | nindent 14 }}
+        {{- end }}
+      ports:
+      - port: {{ .Values.service.web.port }}  
+    {{- end }}
+    #ingress rule for web-interface
+    {{- if and .Values.networkPolicy.ingressRules.pdnsWebAccessOnlyFrom.enabled (or .Values.networkPolicy.ingressRules.pdnsWebAccessOnlyFrom.namespaceSelector .Values.networkPolicy.ingressRules.pdnsWebAccessOnlyFrom.podSelector) }}
+    - from:
+        {{- if .Values.networkPolicy.ingressRules.pdnsWebAccessOnlyFrom.namespaceSelector }}
+        - namespaceSelector:
+            matchLabels:
+              {{- include "common.tplvalues.render" (dict "value" .Values.networkPolicy.ingressRules.pdnsWebAccessOnlyFrom.namespaceSelector "context" $) | nindent 14 }}
+        {{ else }}     
+        - namespaceSelector: {}
+        {{- end }}
+        {{- if .Values.networkPolicy.ingressRules.pdnsWebAccessOnlyFrom.podSelector }}
+        - podSelector:
+            matchLabels:
+              {{- include "common.tplvalues.render" (dict "value" .Values.networkPolicy.ingressRules.pdnsWebAccessOnlyFrom.podSelector "context" $) | nindent 14 }}
+        {{- end }}
+      ports:
+      - port: {{ .Values.service.web.port }}  
+    {{- end }}
+    #custom ingress rule for web-interface
+    {{- if .Values.networkPolicy.ingressRules.pdnsWebAccessOnlyFrom.customRules }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.networkPolicy.ingressRules.pdnsWebAccessOnlyFrom.customRules "context" $) | nindent 4 }}
+    {{- end }}
+    #ingress rule for dns-udp
+    {{- if and .Values.networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.enabled (or .Values.networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.namespaceSelector .Values.networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.podSelector) }}
+    - from:
+        {{- if .Values.networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.namespaceSelector }}
+        - namespaceSelector:
+            matchLabels:
+              {{- include "common.tplvalues.render" (dict "value" .Values.networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.namespaceSelector "context" $) | nindent 14 }}
+        {{ else }}     
+        - namespaceSelector: {}
+        {{- end }}
+        {{- if .Values.networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.podSelector }}
+        - podSelector:
+            matchLabels:
+              {{- include "common.tplvalues.render" (dict "value" .Values.networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.podSelector "context" $) | nindent 14 }}
+        {{- end }}
+      ports:
+      - port: 53
+        protocol: UDP
+    {{- end }}
+    #custom ingress rule for dns-udp
+    {{- if .Values.networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.customRules }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.customRules "context" $) | nindent 4 }}
+    {{- end }}
+    #ingress rule for dns-tcp
+    {{- if and .Values.networkPolicy.ingressRules.pdnsTcpAccessOnlyFrom.enabled (or .Values.networkPolicy.ingressRules.pdnsTcpAccessOnlyFrom.namespaceSelector .Values.networkPolicy.ingressRules.pdnsTcpAccessOnlyFrom.podSelector) }}
+    - from:
+        {{- if .Values.networkPolicy.ingressRules.pdnsTcpAccessOnlyFrom.namespaceSelector }}
+        - namespaceSelector:
+            matchLabels:
+              {{- include "common.tplvalues.render" (dict "value" .Values.networkPolicy.ingressRules.pdnsTcpAccessOnlyFrom.namespaceSelector "context" $) | nindent 14 }}
+        {{ else }}     
+        - namespaceSelector: {}
+        {{- end }}
+        {{- if .Values.networkPolicy.ingressRules.pdnsTcpAccessOnlyFrom.podSelector }}
+        - podSelector:
+            matchLabels:
+              {{- include "common.tplvalues.render" (dict "value" .Values.networkPolicy.ingressRules.pdnsTcpAccessOnlyFrom.podSelector "context" $) | nindent 14 }}
+        {{- end }}
+      ports:
+      - port: 53
+        protocol: TCP
+    {{- end }}
+    #custom ingress rule for dns-tcp
+    {{- if .Values.networkPolicy.ingressRules.pdnsTcpAccessOnlyFrom.customRules }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.networkPolicy.ingressRules.pdnsTcpAccessOnlyFrom.customRules "context" $) | nindent 4 }}
+    {{- end }}    
+{{- end }}
