@@ -1,0 +1,301 @@
+# Default values for powerdns-pdns.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: powerdns/pdns
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podLabels: {}
+#  my-custom-label: super
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: 
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  web:
+    type: ClusterIP
+    port: 8081
+  udp:
+    enabled: true
+    type: ClusterIP
+    loadBalancerIP:
+    #clusterIP:
+    #externalTrafficPolicy: Local
+    annotations: {}
+    #  metallb.universe.tf/address-pool: a-pool
+    #  metallb.universe.tf/allow-shared-ip: public-dns    
+  tcp:
+    enabled: true
+    type: ClusterIP
+    #loadBalancerIP:
+    #externalTrafficPolicy: Local
+    annotations: {}
+    #  metallb.universe.tf/address-pool: a-pool
+    #  metallb.universe.tf/allow-shared-ip: public-dns    
+
+ingress:
+  enabled: true
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+pdns:
+  database:
+    host: ""
+    db: ""
+    port: 3306
+    user: "pdns"
+    #create secret from password
+    password: ""
+    # keyname
+    secretKey: password
+    #use existing secret for db-password
+    existingSecret: {}
+    backup:
+      enabled: false
+      ## @param backup.retention Backup-Retention in days. Defaults to 30. Beware - this is set on bucket level, so please coordinate the values
+      retention: "30"
+      ## @param backup.schedule Backup-Schedule as cron-job. Defaults to every 4 hours.
+      schedule: "0 */4 * * *"
+      ## @param backup.cronJobLabels Labels for cron-jobs and job-instances
+      cronJobLabels: {}
+      ## @param backup.podLabels Labels for backup-pods, can be useful for Networkpolicies
+      podLabels: {}
+      resources: {}
+      image:
+        repository: my-registry/someorg/mysql-cloud-backup
+        pullPolicy: IfNotPresent
+        tag: ""      
+      s3:
+        ## @param backup.s3.endpoint S3-Endpoint - Required
+        endpoint: 
+        ## @param backup.s3.bucket S3-Bucket - Required
+        bucket: 
+        ## @param backup.s3.prefix Folder in given S3-Bucket
+        #if not present, will be same as powerdns-pdns.fullname
+        prefix: "" 
+        ## @param backup.s3.existingSecret Take S3 Secret-Access-Key and S3 Secret-Access-Key from an existing secret
+        ## with keys S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY
+        existingSecret: "my-secret" 
+        ## @param backup.s3.accessKeyId S3 Access-Key-ID
+        accessKeyId: 
+        ## @param backup.s3.secretAccessKey S3 Secret-Access-Key
+        secretAccessKey: 
+    init:
+      enabled: true
+      image:
+        repository: powerdns/pdns-gmysql-init
+        pullPolicy: IfNotPresent
+        # Overrides the image tag whose default is the chart appVersion.
+        tag: ""
+  web:
+    enabled: true
+    allowFrom: "0.0.0.0/0"
+    api: 
+      enabled: true
+      # creates secret with api-key
+      apiKey: "secret"
+      secretKey: apikey
+      #use existing secret for api-key
+      existingSecret: {}      
+  additionalConfig: #[]
+  #  - config: default-soa-name
+  #    value: a-name.example.org  
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+#  node-role.kubernetes.io/infra: ""
+
+tolerations: []
+#  - effect: NoSchedule
+#    key: node-role.kubernetes.io/infra
+#  - effect: PreferNoSchedule
+#    key: node-role.kubernetes.io/infra
+
+affinity: {}
+#  podAntiAffinity:
+#    preferredDuringSchedulingIgnoredDuringExecution:
+#    - podAffinityTerm:
+#        labelSelector:
+#          matchExpressions:
+#          - key: app.kubernetes.io/name
+#            operator: In
+#            values:
+#            - powerdns-pdns
+#          - key: app.kubernetes.io/instance
+#            operator: In
+#            values:
+#            - SET-RELEASE-NAME-MANUALLY
+#        topologyKey: kubernetes.io/hostname
+#      weight: 100
+
+serviceMonitor:
+  enabled: false
+  interval: 30s
+  labels:
+    app.kubernetes.io/monitoring-instance: playground
+
+## Add networkpolicies
+##
+networkPolicy:
+  ## @param networkPolicy.enabled Enable network policies
+  ##
+  enabled: false
+  ## @param networkPolicy.metrics.enabled Enable network policy for metrics (prometheus)
+  ## @param networkPolicy.metrics.namespaceSelector [object] Monitoring namespace selector labels. These labels will be used to identify the prometheus' namespace. If object is empty, access from all namespaces will be allowed
+  ## @param networkPolicy.metrics.podSelector [object] Monitoring pod selector labels. These labels will be used to identify the Prometheus pods.
+  ##
+  metrics:
+    enabled: false
+    ## e.g:
+    ## podSelector:
+    ##   label: monitoring
+    ##
+    podSelector: {}
+    ## e.g:
+    ## namespaceSelector:
+    ##   label: monitoring
+    ##
+    namespaceSelector: {}
+
+  ingressRules:
+    ## Allow access to the PDNS web-interface only from the indicated:
+    ## @param networkPolicy.ingressRules.pdnsWebAccessOnlyFrom.enabled Enable network policy for Web-Interface
+    ## @param networkPolicy.ingressRules.pdnsWebAccessOnlyFrom.namespaceSelector [object]  If object is empty, access from all namespaces will be allowed
+    ## @param networkPolicy.ingressRules.pdnsWebAccessOnlyFrom.podSelector [object] 
+    ## @param networkPolicy.ingressRules.pdnsWebAccessOnlyFrom.customRules [object] Custom ingress-rules
+    ##
+    pdnsWebAccessOnlyFrom:
+      enabled: false
+      ## e.g:
+      ## namespaceSelector:
+      ##   label: ingress
+      ##
+      namespaceSelector: {}
+      ## e.g:
+      ## podSelector:
+      ##   label: access
+      ##
+      podSelector: {}
+      ## custom ingress rules
+      ## e.g:
+      ## customRules:
+      ##   - from:
+      ##       - namespaceSelector:
+      ##           matchLabels:
+      ##             label: example
+      ##
+      customRules: {}    
+    ## Allow access to the PDNS UDP-DNS service only from the indicated:
+    ## @param networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.enabled Enable network policy for DNS-UDP
+    ## @param networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.namespaceSelector [object] 
+    ## @param networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.podSelector [object] 
+    ## @param networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.customRules [object] Custom ingress-rules
+    ##
+    pdnsUdpAccessOnlyFrom:
+      enabled: false
+      ## e.g:
+      ## namespaceSelector:
+      ##   label: ingress
+      ##
+      namespaceSelector: {}
+      ## e.g:
+      ## podSelector:
+      ##   label: access
+      ##
+      podSelector: {}
+      ## custom ingress rules
+      ## e.g:
+      ## customRules:
+      ##   - from:
+      ##       - namespaceSelector:
+      ##           matchLabels:
+      ##             label: example
+      ##
+      customRules: {}    
+    ## Allow access to the PDNS TCP-DNS service only from the indicated:
+    ## @param networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.enabled Enable network policy for DNS-TCP
+    ## @param networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.namespaceSelector [object] 
+    ## @param networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.podSelector [object] 
+    ## @param networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.customRules [object] Custom ingress-rules
+    ##
+    ##
+    pdnsTcpAccessOnlyFrom:
+      enabled: false
+      ## e.g:
+      ## namespaceSelector:
+      ##   label: ingress
+      ##
+      namespaceSelector: {}
+      ## e.g:
+      ## podSelector:
+      ##   label: access
+      ##
+      podSelector: {}
+      ## custom ingress rules
+      ## e.g:
+      ## customRules:
+      ## - from:
+      ##     - ipBlock:
+      ##         cidr: 192.168.0.0/24
+      ##   ports:
+      ##   - port : 53
+      ##     protocol: TCP
+
+      customRules: {}

@@ -1,0 +1,147 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "powerdns-pdns.fullname" . }}
+  labels:
+    {{- include "powerdns-pdns.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "powerdns-pdns.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "powerdns-pdns.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "powerdns-pdns.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - env:
+            - name: FLYWAY_DBHOST
+              value: {{ .Values.pdns.database.host }}
+            - name: FLYWAY_DBNAME
+              value: {{ .Values.pdns.database.db }}
+            - name: FLYWAY_USER
+              value: {{ .Values.pdns.database.user }}
+            - name: FLYWAY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: {{ .Values.pdns.database.secretKey }}
+                  name: {{ .Values.pdns.database.existingSecret | default (printf "%s-db" (include "powerdns-pdns.fullname" .)) }}
+          image: "{{ .Values.pdns.database.init.image.repository }}:{{ .Values.pdns.database.init.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.pdns.database.init.image.pullPolicy }}
+          name: init-powerdns-db
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+          - name: PDNS_gmysql_host
+            value: {{ .Values.pdns.database.host }}
+          - name: PDNS_gmysql_port
+            value: {{ .Values.pdns.database.port | quote }}
+          - name: PDNS_gmysql_dbname
+            value: {{ .Values.pdns.database.db }}
+          - name: PDNS_gmysql_user
+            value: {{ .Values.pdns.database.user }}
+          - name: PDNS_gmysql_password
+            valueFrom:
+              secretKeyRef:
+                key: {{ .Values.pdns.database.secretKey }}
+                name: {{ .Values.pdns.database.existingSecret | default (printf "%s-db" (include "powerdns-pdns.fullname" .)) }} 
+          {{ if .Values.pdns.web.enabled -}}
+          - name: PDNS_webserver
+            value: "yes"
+          - name: PDNS_webserver_address
+            value: "0.0.0.0"
+          - name: PDNS_webserver_allow_from
+            value: "0.0.0.0/0"
+          {{ if .Values.pdns.web.api.enabled -}}  
+          - name: PDNS_api
+            value: "yes"
+          - name: PDNS_api_key
+            valueFrom:
+              secretKeyRef:
+                key: {{ .Values.pdns.web.api.secretKey }}
+                name: {{ .Values.pdns.web.api.existingSecret | default (printf "%s-api" (include "powerdns-pdns.fullname" .)) }} 
+          {{- end }}              
+          {{- end }}  
+          {{- range .Values.pdns.additionalConfig }}
+          - name: PDNS_{{ .config | replace "-" "_" }}
+            value: {{ .value | quote }}
+          {{- end }}          
+          ports:
+            {{ if .Values.pdns.web.enabled -}}
+            - name: http
+              containerPort: {{ .Values.service.web.port }}
+              protocol: TCP
+            {{- end }}  
+            - name: dns-udp
+              containerPort: 53
+              protocol: UDP
+            - name: dns-tcp
+              containerPort: 53
+              protocol: TCP
+          livenessProbe:
+            #{{ if .Values.pdns.web.enabled -}}
+            #httpGet:
+            #  path: /
+            #  port: http
+            #{{- end }}
+            exec:
+              command:
+              - pdns_control
+              - rping  
+          startupProbe:
+            #{{ if .Values.pdns.web.enabled -}}
+            #httpGet:
+            #  path: /
+            #  port: http
+            #{{- end }}
+            exec:
+              command:
+              - pdns_control
+              - rping
+            failureThreshold: 12
+            periodSeconds: 10
+          readinessProbe:
+            #{{ if .Values.pdns.web.enabled -}}
+            #httpGet:
+            #  path: /
+            #  port: http
+            #{{- end }}  
+            exec:
+              command:
+              - pdns_control
+              - rping
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

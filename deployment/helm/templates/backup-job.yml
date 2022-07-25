@@ -1,0 +1,92 @@
+{{- if .Values.pdns.database.backup.enabled }}
+{{- if semverCompare ">=1.21-0" .Capabilities.KubeVersion.GitVersion -}}
+apiVersion: batch/v1
+{{- else -}}
+apiVersion: batch/v1beta1
+{{- end }}
+kind: CronJob
+metadata:
+  name: {{ printf "%s-backup" (include "powerdns-pdns.fullname" .) }}
+  labels:
+    {{- include "dbbackup.labels" . | nindent 4 }}
+    {{- include "dbbackupjob.labels" . | nindent 4 }}
+spec:
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    metadata:
+      {{- with .Values.pdns.database.backup.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "dbbackup.selectorLabels" . | nindent 8 }}
+        {{- include "dbbackupjob.labels" . | nindent 8 }}
+        {{- with .Values.pdns.database.backup.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      backoffLimit: 2 
+      template:
+        metadata:
+          labels:
+            {{- include "dbbackup.selectorLabels" . | nindent 12 }}
+            {{- include "dbbackupjob.labels" . | nindent 12 }}
+            {{- with .Values.pdns.database.backup.podLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        spec:
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.affinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          containers:
+          - env:
+            - name: S3_ENDPOINT
+              value: {{ .Values.pdns.database.backup.s3.endpoint }}
+            - name: S3_BUCKET
+              value: {{ .Values.pdns.database.backup.s3.bucket }}
+            - name: S3_PREFIX
+              value: {{ .Values.pdns.database.backup.s3.prefix | default (include "powerdns-pdns.fullname" .)  }}
+            - name: S3_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "dbbackup.secretName" . }}
+                  key: S3_ACCESS_KEY_ID
+            - name: S3_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "dbbackup.secretName" . }}
+                  key: S3_SECRET_ACCESS_KEY
+            - name: MARIADB_HOST
+              value: {{ .Values.pdns.database.host }}
+            - name: MARIADB_DATABASE
+              value: {{ .Values.pdns.database.db }}
+            - name: MARIADB_USER
+              value: {{ .Values.pdns.database.user }}
+            - name: MARIADB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: {{ .Values.pdns.database.secretKey }}
+                  name: {{ .Values.pdns.database.existingSecret | default (printf "%s-db" (include "powerdns-pdns.fullname" .)) }}
+            - name: RETENTION_DAYS
+              value: "{{ .Values.pdns.database.backup.retention | default "30" }}"
+            image: "{{ .Values.pdns.database.backup.image.repository }}:{{ .Values.pdns.database.backup.image.tag }}"
+            imagePullPolicy: {{ .Values.pdns.database.backup.image.pullPolicy }}                  
+            name: {{ printf "%s-backup" (include "powerdns-pdns.fullname" .) }}
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+            resources:
+              {{- toYaml .Values.cloudBackupResources | nindent 14 }}
+          dnsPolicy: ClusterFirst
+          restartPolicy: Never
+          schedulerName: default-scheduler
+          terminationGracePeriodSeconds: 30
+  schedule: {{ .Values.pdns.database.backup.schedule | default "0 */4 * * *" }}
+  successfulJobsHistoryLimit: 1
+  suspend: false
+{{- end }}
