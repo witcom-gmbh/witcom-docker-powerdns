@@ -9,22 +9,25 @@ metadata:
     {{- end }}
   name: {{ include "powerdns-pdns.fullname" . }}
 spec:
+  jobLabel: {{ .Values.serviceMonitor.jobLabel | quote }}
   endpoints:
-  - honorLabels: true
+  - port: http
+    {{- if .Values.serviceMonitor.scrapeTimeout }}
+    scrapeTimeout: {{ .Values.serviceMonitor.scrapeTimeout }}
+    {{- end }}
+    {{- if .Values.serviceMonitor.honorLabels }}
+    honorLabels: {{ .Values.serviceMonitor.honorLabels }}
+    {{- end }}
+    {{- if .Values.serviceMonitor.metricRelabelings }}
+    metricRelabelings: {{- include "common.tplvalues.render" ( dict "value" .Values.serviceMonitor.metricRelabelings "context" $) | nindent 8 }}
+    {{- end }}
+    {{- if .Values.serviceMonitor.relabelings }}
+    relabelings: {{- include "common.tplvalues.render" ( dict "value" .Values.serviceMonitor.relabelings "context" $) | nindent 8 }}
+    {{- end }}
+    {{- if .Values.serviceMonitor.interval }}
     interval: {{ .Values.serviceMonitor.interval }}
-    port: http
+    {{- end }}  
     path: /metrics
-    relabelings:
-    - action: replace
-      regex: ([^:]+)(:[0-9]+)?
-      replacement: ${1}
-      sourceLabels:
-      - __address__
-      targetLabel: instance
-    - action: replace
-      sourceLabels:
-      - __meta_kubernetes_endpoints_label_app_kubernetes_io_instance
-      targetLabel: job
   selector:
     matchLabels:
       {{- include "powerdns-pdns.selectorLabels" . | nindent 6 }}
