@@ -5,7 +5,13 @@
 replicaCount: 1
 
 image:
-  repository: powerdns/pdns
+  repository: artifactory.witcom.services/powerdns/pdns
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+initImage:
+  repository: artifactory.witcom.services/powerdns/pdns-gmysql-init
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
@@ -91,65 +97,111 @@ resources: {}
 
 pdns:
   database:
+    # -- database-host for powerdns-database
+    # @section -- Database configuration
     host: ""
+    # -- database-name for powerdns-database
+    # @section -- Database configuration
     db: ""
+    # -- database-port for powerdns-database
+    # @section -- Database configuration
     port: 3306
+    # -- database-user for accessing powerdns-database
+    # @section -- Database configuration
     user: "pdns"
-    #create secret from password
+    # -- database-password for accessing powerdns-database. Must be provided if `pdns.database.existingSecret` is empty
+    # @section -- Database configuration
     password: ""
-    # keyname
+    # -- secret-key where `pdns.database.password` will be stored or looked up in `pdns.database.existingSecret`
+    # @section -- Database configuration
     secretKey: password
-    #use existing secret for db-password
-    existingSecret: {}
+    # -- Use existing for secret for the database-password
+    # @section -- Database configuration
+    existingSecret: ""
     backup:
+      # -- Wether to enable backup-job
+      # @section -- Database backup configuration
       enabled: false
-      ## @param backup.retention Backup-Retention in days. Defaults to 30. Beware - this is set on bucket level, so please coordinate the values
+      # -- Backup-Retention in days. Defaults to 30. Beware - this is set on bucket level, so please coordinate the values
+      # @section -- Database backup configuration
       retention: "30"
-      ## @param backup.schedule Backup-Schedule as cron-job. Defaults to every 4 hours.
+      # -- Backup-Schedule as cron-job. Defaults to every 4 hours.
+      # @section -- Database backup configuration
       schedule: "0 */4 * * *"
-      ## @param backup.cronJobLabels Labels for cron-jobs and job-instances
+      # -- Labels for cron-jobs and job-instances
+      # @section -- Database backup configuration
       cronJobLabels: {}
-      ## @param backup.podLabels Labels for backup-pods, can be useful for Networkpolicies
+      # -- Labels for backup-pods, can be useful for Networkpolicies
+      # @section -- Database backup configuration
       podLabels: {}
+      # -- Resource-configuration for backup-pods
+      # @section -- Database backup configuration
       resources: {}
       image:
-        repository: my-registry/someorg/mysql-cloud-backup
+        # -- Image repository for backup-job-pod
+        # @section -- Database backup configuration
+        repository: artifactory.witcom.services/cloud-backup/mysql-cloud-backup
+        # -- Image pullPolicy for backup-job-pod
+        # @section -- Database backup configuration
         pullPolicy: IfNotPresent
+        # -- Image tag for backup-job-pod
+        # @section -- Database backup configuration
         tag: ""      
       s3:
-        ## @param backup.s3.endpoint S3-Endpoint - Required
+        # -- S3-Endpoint - Required
+        # @section -- Database backup configuration
         endpoint: 
-        ## @param backup.s3.bucket S3-Bucket - Required
+        # -- S3-Bucket - Required
+        # @section -- Database backup configuration        
         bucket: 
-        ## @param backup.s3.prefix Folder in given S3-Bucket
-        #if not present, will be same as powerdns-pdns.fullname
+        # -- Prefix for folder in bucket. If not provided, will default to powerdns-pdns.fullname
+        # @section -- Database backup configuration        
         prefix: "" 
-        ## @param backup.s3.existingSecret Take S3 Secret-Access-Key and S3 Secret-Access-Key from an existing secret
-        ## with keys S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY
-        existingSecret: "my-secret" 
-        ## @param backup.s3.accessKeyId S3 Access-Key-ID
-        accessKeyId: 
-        ## @param backup.s3.secretAccessKey S3 Secret-Access-Key
-        secretAccessKey: 
+        # -- Take S3 Secret-Access-Key and S3 Secret-Access-Key from an existing secret. Keys can be defined with `pdns.database.backup.s3.accessKeyIdSecretKey` and `pdns.database.backup.s3.secretAccessKeySecretKey`
+        # @section -- Database backup configuration        
+        existingSecret: 
+        # -- S3 Access-Key-ID - required
+        # @section -- Database backup configuration        
+        accessKeyId: "" 
+        # -- S3 Secret-Access-Key
+        # @section -- Database backup configuration        
+        secretAccessKey: ""
+        # -- Key for S3-Access-Key-Id in secret `pdns.database.backup.s3.existingSecret`
+        # @section -- Database backup configuration        
+        accessKeyIdSecretKey: "S3_ACCESS_KEY_ID" 
+        # -- Key for S3-Secret-Access-Key in secret `pdns.database.backup.s3.existingSecret`
+        # @section -- Database backup configuration        
+        secretAccessKeySecretKey: "S3_SECRET_ACCESS_KEY"
     init:
+      # -- Initialize PowerDNS-Database with init-container
+      # @section -- Database initialization
       enabled: true
+      # -- Should an existing database be initialized. See https://documentation.red-gate.com/fd/baseline-on-migrate-224919695.html
+      # @section -- Database initialization
       baseline: "false"
-      image:
-        repository: powerdns/pdns-gmysql-init
-        pullPolicy: IfNotPresent
-        # Overrides the image tag whose default is the chart appVersion.
-        tag: ""
   web:
+    # -- Wether to enable powerdns-web-access
+    # @section -- Web-Access
     enabled: true
+    # -- ACL for powerdns-web-access
+    # @section -- Web-Access
     allowFrom: "0.0.0.0/0"
     api: 
+      # -- Wether to enable powerdns-rest-api
+      # @section -- Web-Access
       enabled: true
-      # creates secret with api-key
+      # -- Create secret with provided API-Key
+      # @section -- Web-Access
       apiKey: "secret"
+      # -- Take api-key from existing secret 
+      # @section -- Web-Access
+      existingSecret: ""      
+      # -- Secret-Key where api-key is available
+      # @section -- Web-Access
       secretKey: apikey
-      #use existing secret for api-key
-      existingSecret: {}      
-  additionalConfig: #[]
+  # -- Additional configuration-parameters for powerdns authorative-server. See https://doc.powerdns.com/authoritative/settings.html
+  # @section -- PowerDNS Authorative configuration
+  additionalConfig: []
   #  - config: default-soa-name
   #    value: a-name.example.org  
 
@@ -229,108 +281,80 @@ serviceMonitor:
 ## Add networkpolicies
 ##
 networkPolicy:
-  ## @param networkPolicy.enabled Enable network policies
-  ##
+  # -- Enable network policies
+  # @section -- Network-Policies
   enabled: false
   ## @param networkPolicy.metrics.enabled Enable network policy for metrics (prometheus)
   ## @param networkPolicy.metrics.namespaceSelector [object] Monitoring namespace selector labels. These labels will be used to identify the prometheus' namespace. If object is empty, access from all namespaces will be allowed
   ## @param networkPolicy.metrics.podSelector [object] Monitoring pod selector labels. These labels will be used to identify the Prometheus pods.
   ##
   metrics:
+    # -- Enable network policy for metrics (prometheus)
+    # @section -- Network-Policies
     enabled: false
     ## e.g:
     ## podSelector:
     ##   label: monitoring
     ##
+    # -- Monitoring pod selector labels. These labels will be used to identify the Prometheus pods.
+    # @section -- Network-Policies
     podSelector: {}
     ## e.g:
     ## namespaceSelector:
     ##   label: monitoring
     ##
+    # -- Monitoring namespace selector labels. These labels will be used to identify the prometheus' namespace. If object is empty, access from all namespaces will be allowed
+    # @section -- Network-Policies
     namespaceSelector: {}
 
   ingressRules:
-    ## Allow access to the PDNS web-interface only from the indicated:
-    ## @param networkPolicy.ingressRules.pdnsWebAccessOnlyFrom.enabled Enable network policy for Web-Interface
-    ## @param networkPolicy.ingressRules.pdnsWebAccessOnlyFrom.namespaceSelector [object]  If object is empty, access from all namespaces will be allowed
-    ## @param networkPolicy.ingressRules.pdnsWebAccessOnlyFrom.podSelector [object] 
-    ## @param networkPolicy.ingressRules.pdnsWebAccessOnlyFrom.customRules [object] Custom ingress-rules
-    ##
     pdnsWebAccessOnlyFrom:
+      # -- Enable network policy for Web-Interface
+      # @section -- Network-Policies
       enabled: false
-      ## e.g:
-      ## namespaceSelector:
-      ##   label: ingress
-      ##
-      namespaceSelector: {}
-      ## e.g:
-      ## podSelector:
-      ##   label: access
-      ##
-      podSelector: {}
-      ## custom ingress rules
-      ## e.g:
-      ## customRules:
-      ##   - from:
-      ##       - namespaceSelector:
-      ##           matchLabels:
-      ##             label: example
-      ##
-      customRules: {}    
-    ## Allow access to the PDNS UDP-DNS service only from the indicated:
-    ## @param networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.enabled Enable network policy for DNS-UDP
-    ## @param networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.namespaceSelector [object] 
-    ## @param networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.podSelector [object] 
-    ## @param networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.customRules [object] Custom ingress-rules
-    ##
-    pdnsUdpAccessOnlyFrom:
-      enabled: false
-      ## e.g:
-      ## namespaceSelector:
-      ##   label: ingress
-      ##
-      namespaceSelector: {}
-      ## e.g:
-      ## podSelector:
-      ##   label: access
-      ##
-      podSelector: {}
-      ## custom ingress rules
-      ## e.g:
-      ## customRules:
-      ##   - from:
-      ##       - namespaceSelector:
-      ##           matchLabels:
-      ##             label: example
-      ##
-      customRules: {}    
-    ## Allow access to the PDNS TCP-DNS service only from the indicated:
-    ## @param networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.enabled Enable network policy for DNS-TCP
-    ## @param networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.namespaceSelector [object] 
-    ## @param networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.podSelector [object] 
-    ## @param networkPolicy.ingressRules.pdnsUdpAccessOnlyFrom.customRules [object] Custom ingress-rules
-    ##
-    ##
-    pdnsTcpAccessOnlyFrom:
-      enabled: false
-      ## e.g:
-      ## namespaceSelector:
-      ##   label: ingress
-      ##
-      namespaceSelector: {}
-      ## e.g:
-      ## podSelector:
-      ##   label: access
-      ##
-      podSelector: {}
-      ## custom ingress rules
-      ## e.g:
-      ## customRules:
-      ## - from:
-      ##     - ipBlock:
-      ##         cidr: 192.168.0.0/24
-      ##   ports:
-      ##   - port : 53
-      ##     protocol: TCP
 
-      customRules: {}
+      # -- Monitoring namespace selector labels. These labels will be used to identify the prometheus' namespace. If object is empty, access from all namespaces will be allowed
+      # @section -- Network-Policies
+      namespaceSelector: {}
+
+      # -- Monitoring pod selector labels. These labels will be used to identify the Prometheus pods.
+      # @section -- Network-Policies
+      podSelector: {}
+
+      # -- Custom ingress-rules
+      # @section -- Network-Policies
+      customRules: {}    
+
+    pdnsUdpAccessOnlyFrom:
+      # -- Enable network policy for DNS-UDP
+      # @section -- Network-Policies
+      enabled: false
+
+      # -- Monitoring namespace selector labels. These labels will be used to identify the prometheus' namespace. If object is empty, access from all namespaces will be allowed
+      # @section -- Network-Policies
+      namespaceSelector: {}
+
+      # -- Monitoring pod selector labels. These labels will be used to identify the Prometheus pods.
+      # @section -- Network-Policies
+      podSelector: {}
+
+      # -- Custom ingress-rules
+      # @section -- Network-Policies
+      customRules: {}    
+
+    pdnsTcpAccessOnlyFrom:
+      # -- Enable network policy for DNS-UDP
+      # @section -- Network-Policies
+      enabled: false
+
+      # -- Monitoring namespace selector labels. These labels will be used to identify the prometheus' namespace. If object is empty, access from all namespaces will be allowed
+      # @section -- Network-Policies
+      namespaceSelector: {}
+
+      # -- Monitoring pod selector labels. These labels will be used to identify the Prometheus pods.
+      # @section -- Network-Policies
+      podSelector: {}
+
+      # -- Custom ingress-rules
+      # @section -- Network-Policies
+      customRules: {}    

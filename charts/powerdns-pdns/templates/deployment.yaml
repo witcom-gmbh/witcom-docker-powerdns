@@ -1,3 +1,4 @@
+{{ include "database.isConfigured" . }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -46,8 +47,8 @@ spec:
                 secretKeyRef:
                   key: {{ .Values.pdns.database.secretKey }}
                   name: {{ .Values.pdns.database.existingSecret | default (printf "%s-db" (include "powerdns-pdns.fullname" .)) }}
-          image: "{{ .Values.pdns.database.init.image.repository }}:{{ .Values.pdns.database.init.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.pdns.database.init.image.pullPolicy }}
+          image: "{{ .Values.initImage.repository }}:{{ .Values.initImage.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.initImage.pullPolicy }}
           name: init-powerdns-db
       {{- end }}
       containers:

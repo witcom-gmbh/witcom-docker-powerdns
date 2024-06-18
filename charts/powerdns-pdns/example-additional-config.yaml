@@ -1,0 +1,16 @@
+pdns:
+  additionalConfig:
+  - config: loglevel
+    value: "4"
+  - config: primary
+    value: true
+  - config: dnsupdate
+    value: false
+  - config: only_notify
+    value: 0.0.0.0/0
+  - config: allow_axfr_ips
+    value: 0.0.0.0/0
+  - config: local_address
+    value: 0.0.0.0
+  - config: default-soa-content
+    value: clouddns1.witcom.de hostmaster.witcom.de@ 0 10800 3600 604800 3600

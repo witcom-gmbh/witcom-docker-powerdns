@@ -1,0 +1,41 @@
+networkPolicy:
+  enabled: true
+  ingressRules:
+    pdnsTcpAccessOnlyFrom:
+      customRules:
+      - from:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+        ports:
+        - port: 53
+          protocol: TCP
+      enabled: true
+    pdnsUdpAccessOnlyFrom:
+      customRules:
+      - from:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+        ports:
+        - port: 53
+          protocol: UDP
+      enabled: true
+    pdnsWebAccessOnlyFrom:
+      customRules:
+      - from:
+        - namespaceSelector:
+            matchLabels:
+              name: infra-public
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/component: powerdns-admin
+              app.kubernetes.io/part-of: pda01
+        ports:
+        - port: 8081
+          protocol: TCP
+      enabled: true
+      namespaceSelector:
+        name: infra-private
+      podSelector:
+        app.kubernetes.io/component: controller
+        app.kubernetes.io/instance: ngix-ingress-private
+        app.kubernetes.io/name: ingress-nginx

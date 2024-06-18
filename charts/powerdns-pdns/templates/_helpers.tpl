@@ -112,4 +112,84 @@ Return true if a secret object should be created for S3 backups
 {{- else -}}
 {{- end -}}
 {{- end -}}
- 
+
+{{/*
+Fail in case database configuration is not complete
+*/}}
+{{- define "database.isConfigured" -}}
+{{- $failMessageRaw := `
+To configure the database, you have to set:
+
+    - pdns.database.host
+    - pdns.database.port (defaults to 3306)
+    - pdns.database.user
+    - pdns.database.db
+
+  To configure the  password you have to either
+
+  - option 1, set :
+    - pdns.database.password
+
+  - option 2, provide a secret with the keys (if key is not defined value will be taken from value-specification)
+    - pdns.database.existingSecret
+    - pdns.database.secretKey (defaults to password)
+
+` -}}
+    {{- $failMessage := printf "\n%s" $failMessageRaw | trimSuffix "\n" -}}
+
+    {{- $_ := required $failMessage .Values.pdns.database.host -}}
+    {{- $_ := required $failMessage .Values.pdns.database.port -}}
+    {{- $_ := required $failMessage .Values.pdns.database.user -}}
+    {{- $_ := required $failMessage .Values.pdns.database.db -}}
+
+    {{- if (not .Values.pdns.database.existingSecret) -}}
+        {{- $_ := required $failMessage .Values.pdns.database.password -}}
+    {{- end -}}
+
+    {{- if ( .Values.pdns.database.existingSecret) -}}
+        {{- $_ := required $failMessage .Values.pdns.database.secretKey -}}
+    {{- end -}}
+
+{{- end -}} 
+
+
+{{/*
+Fail in case database-backup configuration is not complete
+*/}}
+{{- define "dbbackup.isConfigured" -}}
+{{- if ( .Values.pdns.database.backup.enabled ) -}}
+{{- $failMessageRaw := `
+To configure the database-backup, you have to set:
+
+    - pdns.database.backup.s3.endpoint
+    - pdns.database.backup.s3.bucket
+
+  To configure the access-seccrets you have to either
+
+  - option 1, set :
+    - pdns.database.backup.s3.accessKeyId
+    - pdns.database.backup.s3.secretAccessKey
+
+  - option 2, provide a secret 
+    - pdns.database.backup.s3.existingSecret
+    - pdns.database.backup.s3.accessKeyIdSecretKey (defaults to S3_ACCESS_KEY_ID)
+    - pdns.database.backup.s3.secretAccessKeySecretKey (defaults to S3_SECRET_ACCESS_KEY)
+
+` -}}
+    {{- $failMessage := printf "\n%s" $failMessageRaw | trimSuffix "\n" -}}
+
+    {{- $_ := required $failMessage .Values.pdns.database.backup.s3.endpoint -}}
+    {{- $_ := required $failMessage .Values.pdns.database.backup.s3.bucket -}}
+
+    {{- if (not .Values.pdns.database.backup.s3.existingSecret) -}}
+        {{- $_ := required $failMessage .Values.pdns.database.backup.s3.accessKeyId -}}
+        {{- $_ := required $failMessage .Values.pdns.database.backup.s3.secretAccessKey -}}
+    {{- end -}}
+
+    {{- if ( .Values.pdns.database.backup.s3.existingSecret) -}}
+        {{- $_ := required $failMessage .Values.pdns.database.backup.s3.accessKeyIdSecretKey -}}
+        {{- $_ := required $failMessage .Values.pdns.database.backup.s3.secretAccessKeySecretKey -}}
+    {{- end -}}
+
+{{- end -}} 
+{{- end -}} 

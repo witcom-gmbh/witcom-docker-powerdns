@@ -1,4 +1,5 @@
 {{- if .Values.pdns.database.backup.enabled }}
+{{ include "dbbackup.isConfigured" . }}
 {{- if semverCompare ">=1.21-0" .Capabilities.KubeVersion.GitVersion -}}
 apiVersion: batch/v1
 {{- else -}}
@@ -56,12 +57,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ template "dbbackup.secretName" . }}
-                  key: S3_ACCESS_KEY_ID
+                  key: {{ .Values.pdns.database.backup.s3.accessKeyIdSecretKey }}
             - name: S3_SECRET_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
                   name: {{ template "dbbackup.secretName" . }}
-                  key: S3_SECRET_ACCESS_KEY
+                  key: {{ .Values.pdns.database.backup.s3.secretAccessKeySecretKey }}
             - name: MARIADB_HOST
               value: {{ .Values.pdns.database.host }}
             - name: MARIADB_DATABASE
