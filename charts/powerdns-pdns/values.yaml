@@ -146,7 +146,7 @@ pdns:
         pullPolicy: IfNotPresent
         # -- Image tag for backup-job-pod
         # @section -- Database backup configuration
-        tag: ""      
+        tag: "0.0.3"      
       s3:
         # -- S3-Endpoint - Required
         # @section -- Database backup configuration
