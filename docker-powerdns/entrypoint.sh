@@ -4,11 +4,11 @@ set -e
 export PDNS_setuid=`id -u`;
   
 # Create config file from template
-envtpl < /pdns.conf.tpl > /etc/pdns/pdns.conf
+envtpl < /pdns.conf.tpl > /etc/powerdns/pdns.conf
 
 # Run pdns server
-trap "pdns_control quit" SIGHUP SIGINT SIGTERM
+#trap "pdns_control quit" SIGHUP SIGINT SIGTERM
+#pdns_server "$@" &
+#wait
 
-pdns_server "$@" &
-
-wait
+/usr/bin/tini -s -- /usr/local/sbin/pdns_server-startup

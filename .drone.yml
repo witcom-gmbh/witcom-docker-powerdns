@@ -1,6 +1,7 @@
 global-variables:
   environment: &default_environment
     PDNS_AUTH_RELEASE: 4.6.3
+    PDNS_AUTH_IMAGE: powerdns/pdns-auth-46
     REGISTRY:
       from_secret: artifactory-host-01
     REGISTRY_HELM_PROJECT:  
@@ -75,6 +76,7 @@ steps:
       /kaniko/executor 
       --context ./docker-powerdns
       --build-arg PDNS_AUTH_RELEASE=$${PDNS_AUTH_RELEASE}
+      --build-arg PDNS_AUTH_IMAGE=$${PDNS_AUTH_IMAGE}
       --dockerfile ./docker-powerdns/Dockerfile
       --destination $${REGISTRY}/$${REGISTRY_ORG}/$${REGISTRY_ARTIFACT_PDNS}:latest
     when:
@@ -116,6 +118,7 @@ steps:
     - >
       --context ./docker-powerdns
       --build-arg PDNS_AUTH_RELEASE=$${PDNS_AUTH_RELEASE}
+      --build-arg PDNS_AUTH_IMAGE=$${PDNS_AUTH_IMAGE}
       --dockerfile ./docker-powerdns/Dockerfile
       --destination $${REGISTRY}/$${REGISTRY_ORG}/$${REGISTRY_ARTIFACT_PDNS}:latest
       --destination $${REGISTRY}/$${REGISTRY_ORG}/$${REGISTRY_ARTIFACT_PDNS}:v$${PDNS_AUTH_RELEASE}
