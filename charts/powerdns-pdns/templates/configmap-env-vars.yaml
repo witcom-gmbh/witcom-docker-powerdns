@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ printf "%s" (include "powerdns-pdns.fullname" .) }}
+  labels:
+    {{- include "powerdns-pdns.labels" . | nindent 4 }}
+data:
+  PDNS_gmysql_host: {{ .Values.pdns.database.host }}
+  PDNS_gmysql_port: {{ .Values.pdns.database.port | quote }}
+  PDNS_gmysql_dbname: {{ .Values.pdns.database.db }}
+  PDNS_gmysql_user: {{ .Values.pdns.database.user }}
+  {{ if .Values.pdns.web.enabled -}}
+  PDNS_webserver: "yes"
+  PDNS_webserver_address: "0.0.0.0"
+  PDNS_webserver_allow_from: "0.0.0.0/0"
+  {{ if .Values.pdns.web.api.enabled -}}
+  PDNS_api: yes
+  {{- end }}
+  {{- end }}
+  {{- range .Values.pdns.additionalConfig }}
+  PDNS_{{ .config | replace "-" "_" }}: {{ .value | quote }}
+  {{- end }}          

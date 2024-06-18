@@ -14,8 +14,9 @@ spec:
       {{- include "powerdns-pdns.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
+        checksum/configmap-env-vars: {{ include (print $.Template.BasePath "/configmap-env-vars.yaml") . | sha256sum }}
+      {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
@@ -58,40 +59,21 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-          - name: PDNS_gmysql_host
-            value: {{ .Values.pdns.database.host }}
-          - name: PDNS_gmysql_port
-            value: {{ .Values.pdns.database.port | quote }}
-          - name: PDNS_gmysql_dbname
-            value: {{ .Values.pdns.database.db }}
-          - name: PDNS_gmysql_user
-            value: {{ .Values.pdns.database.user }}
           - name: PDNS_gmysql_password
             valueFrom:
               secretKeyRef:
                 key: {{ .Values.pdns.database.secretKey }}
                 name: {{ .Values.pdns.database.existingSecret | default (printf "%s-db" (include "powerdns-pdns.fullname" .)) }} 
-          {{ if .Values.pdns.web.enabled -}}
-          - name: PDNS_webserver
-            value: "yes"
-          - name: PDNS_webserver_address
-            value: "0.0.0.0"
-          - name: PDNS_webserver_allow_from
-            value: "0.0.0.0/0"
           {{ if .Values.pdns.web.api.enabled -}}  
-          - name: PDNS_api
-            value: "yes"
           - name: PDNS_api_key
             valueFrom:
               secretKeyRef:
                 key: {{ .Values.pdns.web.api.secretKey }}
                 name: {{ .Values.pdns.web.api.existingSecret | default (printf "%s-api" (include "powerdns-pdns.fullname" .)) }} 
           {{- end }}              
-          {{- end }}  
-          {{- range .Values.pdns.additionalConfig }}
-          - name: PDNS_{{ .config | replace "-" "_" }}
-            value: {{ .value | quote }}
-          {{- end }}          
+          envFrom:
+            - configMapRef:
+                name: {{ printf "%s" (include "powerdns-pdns.fullname" .) }}
           ports:
             {{ if .Values.pdns.web.enabled -}}
             - name: http
@@ -105,21 +87,11 @@ spec:
               containerPort: 53
               protocol: TCP
           livenessProbe:
-            #{{ if .Values.pdns.web.enabled -}}
-            #httpGet:
-            #  path: /
-            #  port: http
-            #{{- end }}
             exec:
               command:
               - pdns_control
               - rping  
           startupProbe:
-            #{{ if .Values.pdns.web.enabled -}}
-            #httpGet:
-            #  path: /
-            #  port: http
-            #{{- end }}
             exec:
               command:
               - pdns_control
@@ -127,11 +99,6 @@ spec:
             failureThreshold: 12
             periodSeconds: 10
           readinessProbe:
-            #{{ if .Values.pdns.web.enabled -}}
-            #httpGet:
-            #  path: /
-            #  port: http
-            #{{- end }}  
             exec:
               command:
               - pdns_control

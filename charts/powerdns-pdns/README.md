@@ -126,7 +126,7 @@ pdns:
 
 | Repository | Name | Version |
 |------------|------|---------|
-| https://charts.bitnami.com/bitnami | common | 1.x.x |
+| oci://registry-1.docker.io/bitnamicharts | common | 2.x.x |
 
 ## Values
 
@@ -154,7 +154,7 @@ pdns:
 | pdns.database.backup.resources | object | `{}` | Resource-configuration for backup-pods |
 | pdns.database.backup.image.repository | string | `"artifactory.witcom.services/cloud-backup/mysql-cloud-backup"` | Image repository for backup-job-pod |
 | pdns.database.backup.image.pullPolicy | string | `"IfNotPresent"` | Image pullPolicy for backup-job-pod |
-| pdns.database.backup.image.tag | string | `""` | Image tag for backup-job-pod |
+| pdns.database.backup.image.tag | string | `"0.0.3"` | Image tag for backup-job-pod |
 | pdns.database.backup.s3.endpoint | string | `nil` | S3-Endpoint - Required |
 
 ### Database backup configuration       
@@ -219,10 +219,10 @@ pdns:
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | replicaCount | int | `1` |  |
-| image.repository | string | `"powerdns/pdns"` |  |
+| image.repository | string | `"artifactory.witcom.services/powerdns/pdns"` |  |
 | image.pullPolicy | string | `"IfNotPresent"` |  |
 | image.tag | string | `""` |  |
-| initImage.repository | string | `"powerdns/pdns-gmysql-init"` |  |
+| initImage.repository | string | `"artifactory.witcom.services/powerdns/pdns-gmysql-init"` |  |
 | initImage.pullPolicy | string | `"IfNotPresent"` |  |
 | initImage.tag | string | `""` |  |
 | imagePullSecrets | list | `[]` |  |
