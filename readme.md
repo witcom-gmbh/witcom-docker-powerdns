@@ -8,7 +8,11 @@ This repository contains Docker images for running PowerDNS - preferably within 
  - **docker-powerdns-init** contains an init container for creating/upgrading the database schema required for PowerDNS 
 
 ## docker-powerdns
-Docker image with [PowerDNS 4.x server](https://www.powerdns.com/) and database backend (defaut gmysql) - (without database server). For running, it needs an external database server. Example env vars for mysql configuration:
+Docker image with [PowerDNS 4.x server](https://www.powerdns.com/) and database backend (defaut gmysql) - (without database server).
+
+The image is based on the official PowerDNS docke-images (e.g. powerdns/pdns-auth-46:4.6.3)
+
+For running, it needs an external database server. Example env vars for mysql configuration:
 ```
 PDNS_gmysql_host=mysql
 PDNS_gmysql_port=3306
@@ -112,3 +116,25 @@ docker-powerdns-init is designed to run as non-root user, and can handle arbitra
 ### possible problems
 Flyway only supports "recent" database versions. If your database instance is older than 5 years it won't work.  
 Details: https://flywaydb.org/download/faq#how-long-are-database-releases-supported-in-each-edition-of-flyway
+
+## Development
+
+### Bump PowerDNS Version
+
+Test build 
+
+```console
+cd docker-powerdns
+docker build --build-arg PDNS_AUTH_IMAGE=powerdns/pdns-auth-49 --build-arg PDNS_AUTH_RELEASE=4.9.1 . -t pdns-auth-witcom:latest
+docker run --rm -e PDNS_launch=gsqlite3 -e PDNS_gsqlite3_database=/var/lib/powerdns/pdns.sqlite3 pdns-auth-witcom:latest
+```
+
+Adjust env-variables configuration in `.drone.yml`
+
+```yaml
+global-variables:
+  environment: &default_environment
+    PDNS_AUTH_RELEASE: 4.6.3
+    PDNS_AUTH_IMAGE: powerdns/pdns-auth-46
+    ...
+```
