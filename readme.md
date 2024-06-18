@@ -1,12 +1,14 @@
 # WiTCOM PowerDNS Docker Images
 
+[![Build Status](https://drone-gh-01.witcom.services/api/badges/witcom-gmbh/witcom-docker-powerdns/status.svg?ref=refs/heads/main)](https://drone-gh-01.witcom.services/witcom-gmbh/witcom-docker-powerdns)
+
 This repository contains Docker images for running PowerDNS - preferably within a container orchestrator like K8S or openshift.
 
  - **docker-powerdns** contains completely configurable [PowerDNS 4.x server](https://www.powerdns.com/) with database backend (without mysql server).
- -  **docker-powerdns-init** contains an init container for creating/upgrading the database schema required for PowerDNS 
+ - **docker-powerdns-init** contains an init container for creating/upgrading the database schema required for PowerDNS 
 
 ## docker-powerdns
-Docker image with [PowerDNS 4.x server](https://www.powerdns.com/) and database backend (defaut gmysql) - (without database server). For running, it needs external database server. Example env vars for mysql configuration:
+Docker image with [PowerDNS 4.x server](https://www.powerdns.com/) and database backend (defaut gmysql) - (without database server). For running, it needs an external database server. Example env vars for mysql configuration:
 ```
 PDNS_gmysql_host=mysql
 PDNS_gmysql_port=3306
@@ -14,9 +16,9 @@ PDNS_gmysql_user=root
 PDNS_gmysql_password=powerdns
 PDNS_gmysql_dbname=powerdns
 ```
-PowerDNS server is configurable via env vars. Every variable starting with `PDNS_` will be inserted into `/etc/pdns/pdns.conf` conf file in the following way: prefix `PDNS_` will be stripped and every `_` will be replaced with `-`. For example, from above mysql config, `PDNS_gmysql_host=mysql` will became `gmysql-host=mysql` in `/etc/pdns/pdns.conf` file. This way, you can configure PowerDNS server any way you need within a `docker run` command.
+PowerDNS server is configurable via env vars. Every variable starting with `PDNS_` will be inserted into `/etc/powerdns/pdns.conf` conf file in the following way: prefix `PDNS_` will be stripped and every `_` will be replaced with `-`. For example, from above mysql config, `PDNS_gmysql_host=mysql` will become `gmysql-host=mysql` in `/etc/powerdns/pdns.conf` file. This way, you can configure PowerDNS server any way you need within a `docker run` command.
 
-You can find [here](https://doc.powerdns.com/md/authoritative/) all available settings.
+You can find all available settings [here](https://doc.powerdns.com/md/authoritative/).
 
 ### Non-Root container
 docker-powerdns is designed to run as non-root user, and can handle arbitrary uids.
@@ -38,6 +40,8 @@ FLYWAY_PASSWORD=
 
 ### example k8s deployment
 Here is an example for an K8S deployment. Both containers are using the same secret to connect to the database. 
+
+Better use the [helm-chart](charts/powerdns-pdns/README.md)
 
 ```
       containers:
