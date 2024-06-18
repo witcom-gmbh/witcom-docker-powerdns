@@ -1,0 +1,142 @@
+global-variables:
+  environment: &default_environment
+    PDNS_AUTH_RELEASE: 4.6.3
+    REGISTRY:
+      from_secret: artifactory-host-01
+    REGISTRY_HELM_PROJECT:  
+      from_secret: artifactory-helm-project-01    
+    USERNAME:
+      from_secret: artifactory-user-01
+    PASSWORD:
+      from_secret: artifactory-password-01
+    REGISTRY_ORG: powerdns
+    REGISTRY_ARTIFACT_PDNS: pdns
+    REGISTRY_ARTIFACT_PDNS_INIT: pdns-gmysql-init
+
+kind: pipeline
+type: docker
+name: default
+platform:
+  os: linux
+  arch: amd64 
+
+steps:
+
+  - name: Lint helm chart
+    image: alpine/helm:3.15.2
+    environment:
+      <<: *default_environment
+    commands:
+    - echo "Linting helm chart"
+    - cd ./charts/powerdns-pdns && helm dependency update && helm lint
+
+  - name: Prepare registry secrets
+    image: alpine
+    volumes:  
+    - name: dockerconfig
+      path: /dockerconfig
+    environment:
+      DOCKER_CONFIG:
+        from_secret: artifactory-dockerconfig-01
+    commands:
+    - echo "$DOCKER_CONFIG" > /dockerconfig/config.json
+
+  - name: Build powerdns-pdns init-image and push to latest
+    image: gcr.io/kaniko-project/executor:debug
+    environment:
+      <<: *default_environment
+    volumes:
+    - name: dockerconfig
+      path: /kaniko/.docker
+    commands:
+    - >
+      /kaniko/executor 
+      --context ./docker-powerdns-init
+      --dockerfile ./docker-powerdns-init/Dockerfile
+      --destination $${REGISTRY}/$${REGISTRY_ORG}/$${REGISTRY_ARTIFACT_PDNS_INIT}:latest
+    when:
+      event:
+        exclude:
+        - tag
+        include:
+        - push
+      branch:
+      - main
+
+  - name: Build powerdns-pdns image and push to latest
+    image: gcr.io/kaniko-project/executor:debug
+    environment:
+      <<: *default_environment
+    volumes:
+    - name: dockerconfig
+      path: /kaniko/.docker
+    commands:
+    - >
+      /kaniko/executor 
+      --context ./docker-powerdns
+      --build-arg PDNS_AUTH_RELEASE=$${PDNS_AUTH_RELEASE}
+      --dockerfile ./docker-powerdns/Dockerfile
+      --destination $${REGISTRY}/$${REGISTRY_ORG}/$${REGISTRY_ARTIFACT_PDNS}:latest
+    when:
+      event:
+        exclude:
+        - tag
+        include:
+        - push
+      branch:
+      - main
+
+  - name: Build and release powerdns-pdns init-image
+    image: gcr.io/kaniko-project/executor:debug
+    environment:
+      <<: *default_environment
+    volumes:
+    - name: dockerconfig
+      path: /kaniko/.docker
+    commands:
+    - >
+      --context ./docker-powerdns-init
+      --dockerfile ./docker-powerdns-init/Dockerfile
+      --destination $${REGISTRY}/$${REGISTRY_ORG}/$${REGISTRY_ARTIFACT_PDNS_INIT}:latest
+      --destination $${REGISTRY}/$${REGISTRY_ORG}/$${REGISTRY_ARTIFACT_PDNS_INIT}:v$${PDNS_AUTH_RELEASE}
+    when:
+      event:
+      - tag
+      ref:
+      - refs/tags/* 
+
+  - name: Build and release powerdns-pdns image
+    image: gcr.io/kaniko-project/executor:debug
+    environment:
+      <<: *default_environment
+    volumes:
+    - name: dockerconfig
+      path: /kaniko/.docker
+    commands:
+    - >
+      --context ./docker-powerdns
+      --build-arg PDNS_AUTH_RELEASE=$${PDNS_AUTH_RELEASE}
+      --dockerfile ./docker-powerdns/Dockerfile
+      --destination $${REGISTRY}/$${REGISTRY_ORG}/$${REGISTRY_ARTIFACT_PDNS}:latest
+      --destination $${REGISTRY}/$${REGISTRY_ORG}/$${REGISTRY_ARTIFACT_PDNS}:v$${PDNS_AUTH_RELEASE}
+    when:
+      event:
+      - tag
+      ref:
+      - refs/tags/* 
+
+volumes:
+- name: shared
+  temp: {}
+- name: build-output
+  temp: {}
+- name: dockerconfig
+  temp: {}
+- name: cache
+  temp: {}
+
+trigger:
+  event:
+  - tag
+  - push
+  - pull_request 

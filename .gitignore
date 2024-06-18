@@ -246,3 +246,4 @@ dist
 
 # Ignore code-workspaces
 *.code-workspace
+charts/powerdns-pdns/Chart.lock
