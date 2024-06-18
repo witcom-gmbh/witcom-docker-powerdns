@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v1.0.2 - 2024-06-18
+#### Improvements
+- Bump powerdns to 4.6.4 - (1b6be80) - iceman91176
+
+- - -
+
 ## v1.0.1 - 2024-06-18
 #### Bug Fixes
 - Fix typo in pipeline - (4f62800) - iceman91176
