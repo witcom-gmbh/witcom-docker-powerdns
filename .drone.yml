@@ -97,6 +97,7 @@ steps:
       path: /kaniko/.docker
     commands:
     - >
+      /kaniko/executor 
       --context ./docker-powerdns-init
       --dockerfile ./docker-powerdns-init/Dockerfile
       --destination $${REGISTRY}/$${REGISTRY_ORG}/$${REGISTRY_ARTIFACT_PDNS_INIT}:latest
@@ -116,6 +117,7 @@ steps:
       path: /kaniko/.docker
     commands:
     - >
+      /kaniko/executor 
       --context ./docker-powerdns
       --build-arg PDNS_AUTH_RELEASE=$${PDNS_AUTH_RELEASE}
       --build-arg PDNS_AUTH_IMAGE=$${PDNS_AUTH_IMAGE}
