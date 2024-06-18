@@ -1,6 +1,6 @@
 global-variables:
   environment: &default_environment
-    PDNS_AUTH_RELEASE: 4.6.3
+    PDNS_AUTH_RELEASE: 4.6.4
     PDNS_AUTH_IMAGE: powerdns/pdns-auth-46
     REGISTRY:
       from_secret: artifactory-host-01

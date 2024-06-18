@@ -121,7 +121,7 @@ Details: https://flywaydb.org/download/faq#how-long-are-database-releases-suppor
 
 ### Bump PowerDNS Version
 
-Test build 
+* Test build 
 
 ```console
 cd docker-powerdns
@@ -129,7 +129,7 @@ docker build --build-arg PDNS_AUTH_IMAGE=powerdns/pdns-auth-49 --build-arg PDNS_
 docker run --rm -e PDNS_launch=gsqlite3 -e PDNS_gsqlite3_database=/var/lib/powerdns/pdns.sqlite3 pdns-auth-witcom:latest
 ```
 
-Adjust env-variables configuration in `.drone.yml`
+* Adjust env-variables configuration in `.drone.yml`
 
 ```yaml
 global-variables:
@@ -137,4 +137,12 @@ global-variables:
     PDNS_AUTH_RELEASE: 4.6.3
     PDNS_AUTH_IMAGE: powerdns/pdns-auth-46
     ...
+```
+
+* If there are database-schema-changes, add them to the init-container
+* Bump application-version in [helm-chart](charts/powerdns-pdns/Chart.yaml)
+* Commit changes - choose commit-type according to version bump, e.g. patch-release is an improvement/fix, minor-release is a feature, ...
+
+```console
+cog commit improvement "Bump powerdns to x.y.z"
 ```

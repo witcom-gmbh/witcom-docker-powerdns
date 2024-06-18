@@ -8,7 +8,8 @@ branch_whitelist = ["main"]
 skip_ci = "[skip ci]"
 skip_untracked = false
 pre_bump_hooks = [
-    "yq -i '.version=\"{{version}}\"' charts/powerdns-pdns/Chart.yaml"
+    "yq -i '.version=\"{{version}}\"' charts/powerdns-pdns/Chart.yaml",
+    "helm-docs -s file",
 ]
 post_bump_hooks = [
     "git push",
