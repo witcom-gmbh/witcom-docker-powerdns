@@ -7,8 +7,8 @@ export PDNS_setuid=`id -u`;
 envtpl < /pdns.conf.tpl > /etc/powerdns/pdns.conf
 
 # Run pdns server
-#trap "pdns_control quit" SIGHUP SIGINT SIGTERM
-#pdns_server "$@" &
-#wait
+trap "pdns_control quit" SIGHUP SIGINT SIGTERM
+pdns_server "$@" &
+wait
 
-/usr/bin/tini -s -- /usr/local/sbin/pdns_server-startup
+# /usr/bin/tini -s -- /usr/local/sbin/pdns_server-startup
