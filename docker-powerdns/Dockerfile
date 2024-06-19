@@ -5,7 +5,7 @@ FROM $PDNS_AUTH_IMAGE:$PDNS_AUTH_RELEASE
 
 ENV POWERDNS_VERSION=$PDNS_AUTH_RELEASE \
     PDNS_socket_dir=/run/pdns \
-    PDNS_master=yes \
+    PDNS_primary=yes \
     # PDNS_daemon=no \ 
     # PDNS_guardian=yes \
     PDNS_setuid=pdns \

@@ -113,11 +113,38 @@ Better use the [helm-chart](charts/powerdns-pdns/README.md)
 ### Non-Root container
 docker-powerdns-init is designed to run as non-root user, and can handle arbitrary uids.
 
-### possible problems
-Flyway only supports "recent" database versions. If your database instance is older than 5 years it won't work.  
-Details: https://flywaydb.org/download/faq#how-long-are-database-releases-supported-in-each-edition-of-flyway
-
 ## Development
+
+### Local tests with docker
+
+```console
+docker network create --driver bridge pdns-net
+docker run --network pdns-net --detach --name some-mariadb --env MARIADB_USER=example-user --env MARIADB_PASSWORD=my_cool_secret --env MARIADB_ROOT_PASSWORD=my-secret-pw  -e MARIADB_DATABASE=powerdns  mariadb:latest
+cd docker-powerdns-init
+docker build --build-arg PDNS_AUTH_IMAGE=powerdns/pdns-auth-47 --build-arg PDNS_AUTH_RELEASE=4.7.4 . -t pdns-auth-ginit:local-latest
+cd ..
+docker run --rm -e FLYWAY_DBHOST=some-mariadb -e FLYWAY_USER=example-user -e FLYWAY_PASSWORD=my_cool_secret --network pdns-net pdns-auth-ginit:local-latest
+cd docker-powerdns
+docker build --build-arg PDNS_AUTH_IMAGE=powerdns/pdns-auth-47 --build-arg PDNS_AUTH_RELEASE=4.7.4 . -t pdns-auth:local-latest
+cd ..
+docker run --rm --name pdns-auth \
+  -e PDNS_gmysql_host=some-mariadb \
+  -e PDNS_gmysql_user=example-user \
+  -e PDNS_gmysql_password=my_cool_secret \
+  -e PDNS_webserver=yes \
+  -e PDNS_webserver_address="0.0.0.0" \
+  -e PDNS_webserver_allow_from="0.0.0.0/0" \
+  -e PDNS_api="yes" \
+  -e PDNS_api_key=apikey \
+  --network pdns-net -p 8081:8081 -p 53:53 pdns-auth:local-latest
+```
+
+Cleanup
+
+```console
+docker rm -f some-mariadb
+docker network rm pdns-net
+```
 
 ### Bump PowerDNS Version
 
