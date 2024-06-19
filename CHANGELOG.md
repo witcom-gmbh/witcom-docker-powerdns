@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v1.0.3 - 2024-06-19
+#### Bug Fixes
+- **(helm)** Fix appVersion - (bce95e0) - *iceman91176*
+
+- - -
+
 ## v1.0.2 - 2024-06-18
 #### Improvements
 - Bump powerdns to 4.6.4 - (1b6be80) - iceman91176
