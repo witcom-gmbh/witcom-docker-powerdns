@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v1.1.0 - 2024-06-19
+#### Features
+- Bump powerdns to 4.7.4 - (3320590) - iceman91176
+
+- - -
+
 ## v1.0.4 - 2024-06-19
 #### Bug Fixes
 - **(helm)** Removes securityContext defaults - (7df146f) - *iceman91176*
