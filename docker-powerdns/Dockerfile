@@ -4,7 +4,7 @@ ARG PDNS_AUTH_IMAGE=powerdns/pdns-auth-46
 FROM $PDNS_AUTH_IMAGE:$PDNS_AUTH_RELEASE
 
 ENV POWERDNS_VERSION=$PDNS_AUTH_RELEASE \
-    PDNS_socket_dir=/var/run/pdns \
+    PDNS_socket_dir=/run/pdns \
     PDNS_master=yes \
     # PDNS_daemon=no \ 
     # PDNS_guardian=yes \
@@ -16,7 +16,10 @@ USER root
 
 RUN apt-get update &&  apt-get install python3-pip -y && pip3 install --trusted-host pypi.org --trusted-host files.pythonhosted.org --no-cache-dir envtpl
 
-RUN chown -Rf pdns:pdns /etc/powerdns
+# Add proper permissions for non-root containers running arbitrary UIDs
+RUN chown -Rf pdns:0 /etc/powerdns && chgrp -R 0 /etc/powerdns && chmod -R g+rwX /etc/powerdns
+RUN mkdir -p /run/pdns && chown -Rf pdns:0 /run/pdns && chgrp -R 0 /run/pdns && chmod -R g+rwX /run/pdns
+RUN setcap 'cap_net_bind_service=+ep' /usr/local/sbin/pdns_server
 
 USER pdns
 
