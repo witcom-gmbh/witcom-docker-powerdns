@@ -115,6 +115,51 @@ docker-powerdns-init is designed to run as non-root user, and can handle arbitra
 
 ## Development
 
+### Local tests with minikube
+
+If running behind a corporate web-proxy -> https://minikube.sigs.k8s.io/docs/handbook/vpn_and_proxy/#x509-certificate-signed-by-unknown-authority
+
+Solution: Add CA-Certs to ~/.minikube/certs
+
+```console
+minikube start
+```
+
+#### Build images
+
+```console
+export PDNS_INIT_IMAGE=pdns-auth-ginit:local-latest
+export PDNS_IMAGE=pdns-auth:local-latest
+cd docker-powerdns-init
+docker build . -t ${PDNS_INIT_IMAGE}
+cd ..
+cd docker-powerdns
+docker build --build-arg PDNS_AUTH_IMAGE=powerdns/pdns-auth-47 --build-arg PDNS_AUTH_RELEASE=4.7.4 . -t ${PDNS_IMAGE}
+cd ..
+```
+
+#### Push images to minikube
+
+```console
+minikube image load ${PDNS_INIT_IMAGE}
+minikube image load ${PDNS_IMAGE}
+```
+
+Watch out: This does not seem to update images. So either use different tags or delete images before pushing them again.
+
+#### Deploy MariaDB-Instance
+
+```console
+helm install db01 oci://registry-1.docker.io/bitnamicharts/mariadb -f ./tests/helm-mariadb.yml
+```
+
+#### Test helm
+
+```console
+cd ./charts/powerdns-pdns
+helm install pdns-01 ./ -f ./tests/helm-pdns-01.yml
+```
+
 ### Local tests with docker
 
 ```console

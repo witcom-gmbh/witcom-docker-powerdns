@@ -1,0 +1,23 @@
+USER-SUPPLIED VALUES:
+image:
+  pullPolicy: Never
+  repository: pdns-auth
+  tag: local-latest
+ingress:
+  enabled: false
+initImage:
+  pullPolicy: Never
+  repository: pdns-auth-ginit
+  tag: local-latest
+pdns:
+  database:
+    backup:
+      enabled: false
+    db: powerdns
+    existingSecret: db01-mariadb
+    host: db01-mariadb
+    secretKey: mariadb-password
+    user: powerdns
+  web:
+    api:
+      apiKey: topsecret
