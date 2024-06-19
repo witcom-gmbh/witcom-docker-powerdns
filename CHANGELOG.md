@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v1.0.4 - 2024-06-19
+#### Bug Fixes
+- **(helm)** Removes securityContext defaults - (7df146f) - *iceman91176*
+- Fix permissions for arbitrary uids - (5b78f81) - iceman91176
+
+- - -
+
 ## v1.0.3 - 2024-06-19
 #### Bug Fixes
 - **(helm)** Fix appVersion - (bce95e0) - *iceman91176*

@@ -2,7 +2,7 @@
 
 PowerDNS authorative dns-server
 
-![Version: 1.0.3](https://img.shields.io/badge/Version-1.0.3-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: v4.6.4](https://img.shields.io/badge/AppVersion-v4.6.4-informational?style=flat-square)
+![Version: 1.0.4](https://img.shields.io/badge/Version-1.0.4-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: v4.6.4](https://img.shields.io/badge/AppVersion-v4.6.4-informational?style=flat-square)
 
 ## TL;DR
 
@@ -234,8 +234,7 @@ pdns:
 | podAnnotations | object | `{}` |  |
 | podLabels | object | `{}` |  |
 | podSecurityContext | object | `{}` |  |
-| securityContext.runAsNonRoot | bool | `true` |  |
-| securityContext.runAsUser | int | `1000` |  |
+| securityContext | object | `{}` |  |
 | service.web.type | string | `"ClusterIP"` |  |
 | service.web.port | int | `8081` |  |
 | service.udp.enabled | bool | `true` |  |
