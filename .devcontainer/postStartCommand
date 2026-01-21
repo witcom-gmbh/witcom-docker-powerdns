@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+inside_git_repo="$(git rev-parse --is-inside-work-tree 2>/dev/null)"
+if [ ! "$inside_git_repo" ]; then
+  git init -b main
+fi
+
+./bin/git/init-hooks
+
+# pip config set global.trusted-host  "pypi.org files.pythonhosted.org pypi.python.org" --trusted-host=pypi.python.org --trusted-host=pypi.org --trusted-host=files.pythonhosted.org
+
+# try helm v3 installation, fall back to v4
+helm plugin install https://github.com/helm-unittest/helm-unittest.git || helm plugin install https://github.com/helm-unittest/helm-unittest.git --verify=false
+
+cp -f ./.devcontainer/bash_aliases.sh ~/.bash_aliases

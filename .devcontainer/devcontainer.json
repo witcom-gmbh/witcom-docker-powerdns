@@ -15,16 +15,14 @@
 		// Configure properties specific to VS Code.
 		"vscode": {
 			// Set *default* container specific settings.json values on container create.
-			"extensions": [
-				
-			]
+			"extensions": []
 		}
 	},
 	//"runArgs": ["--network=confluent-platform_default"],
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	"forwardPorts": [],
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postStartCommand": "./bin/git/init-hooks && echo alias chezmoi-init=\\'chezmoi init $CHEZMOI_REPO --apply\\' >> ~/.bash_aliases && echo 'source <(chezmoi completion bash)' >> ~/.bashrc && echo 'source <(helm completion bash)' >> ~/.bashrc",
+	"postStartCommand": ".devcontainer/postStartCommand",
 	// Uncomment to connect as a non-root user. See https://aka.ms/vscode-remote/containers/non-root.
 	"remoteUser": "vscode",
 	"remoteEnv": {
@@ -38,7 +36,7 @@
 		"ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
 			"version": "latest",
 			"helm": "latest",
-			"minikube": "latest"
+			"minikube": "none"
 		},
 		"ghcr.io/eitsupi/devcontainer-features/jq-likes:2": {
 			"jqVersion": "latest",
@@ -49,5 +47,9 @@
 		},
 		"ghcr.io/rio/features/chezmoi:1": {},
                 "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+                "ghcr.io/witcom-gmbh/devcontainer-features/cocogitto:0": {},
+                "ghcr.io/witcom-gmbh/devcontainer-features/helmdocs:0": {}
+                "ghcr.io/devcontainers-extra/features/kind:1": {},
+                "ghcr.io/jsburckhardt/devcontainer-features/just:latest": {"version": "1.43.1"}
 	}
 }
