@@ -1,0 +1,138 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
+suite: "test deployment"
+templates:
+  - templates/*.yaml
+values:
+  - values/base.yaml
+release:
+  name: test  
+tests:
+  - it: should render deployment with defaults
+    template: templates/deployment.yaml  
+    asserts:
+      - notFailedTemplate: {}
+      - isKind:
+          of: Deployment
+      - equal:
+          path: metadata.name
+          value: test-powerdns-pdns
+      - matchRegex:
+          path: spec.template.spec.initContainers[0].image
+          pattern: powerdns/pdns-auth-dbinit:.*
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: init-powerdns-db
+      - exists:
+          path: spec.template.metadata.annotations["checksum/configmap-env-vars"]
+      # test env-vars
+      - exists:
+          path: spec.template.spec.initContainers[0].env[?(@.name == "FLYWAY_DBTYPE")]
+      - isSubset:
+          path: spec.template.spec.initContainers[0].env[?(@.name == "FLYWAY_DBTYPE")]
+          content:
+            value: mariadb
+      - exists:
+          path: spec.template.spec.initContainers[0].env[?(@.name == "FLYWAY_DBHOST")]
+      - isSubset:
+          path: spec.template.spec.initContainers[0].env[?(@.name == "FLYWAY_DBHOST")]
+          content:
+            value: db01-host
+      - exists:
+          path: spec.template.spec.initContainers[0].env[?(@.name == "FLYWAY_DBNAME")]
+      - isSubset:
+          path: spec.template.spec.initContainers[0].env[?(@.name == "FLYWAY_DBNAME")]
+          content:
+            value: powerdns
+      - exists:
+          path: spec.template.spec.initContainers[0].env[?(@.name == "FLYWAY_USER")]
+      - isSubset:
+          path: spec.template.spec.initContainers[0].env[?(@.name == "FLYWAY_USER")]
+          content:
+            value: powerdns
+      - exists:
+          path: spec.template.spec.initContainers[0].env[?(@.name == "FLYWAY_PASSWORD")]
+      - isSubset:
+          path: spec.template.spec.initContainers[0].env[?(@.name == "FLYWAY_PASSWORD")].valueFrom.secretKeyRef
+          content:
+            name: test-powerdns-pdns-db
+            key: password
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: powerdns/pdns-auth:.*
+      - exists:
+          path: spec.template.spec.containers[0].env[?(@.name == "PDNS_gmysql_password")]
+      - isSubset:
+          path: spec.template.spec.containers[0].env[?(@.name == "PDNS_gmysql_password")].valueFrom.secretKeyRef
+          content:
+            name: test-powerdns-pdns-db
+            key: password
+      - exists:
+          path: spec.template.spec.containers[0].env[?(@.name == "PDNS_api_key")]
+      - isSubset:
+          path: spec.template.spec.containers[0].env[?(@.name == "PDNS_api_key")].valueFrom.secretKeyRef
+          content:
+            name: test-powerdns-pdns-api
+            key: apikey
+      - equal:
+          path: spec.template.spec.containers[0].envFrom[0].configMapRef.name            
+          value: test-powerdns-pdns
+      - exists:
+          path: spec.template.spec.containers[0].ports[?(@.name == "http")]
+
+  - it: should render deployment with postgresql db-settings
+    template: templates/deployment.yaml
+    set:
+      pdns:
+        database:
+          type: postgresql
+          port: 5432
+    asserts:
+      - notFailedTemplate: {}
+      - exists:
+          path: spec.template.spec.initContainers[0].env[?(@.name == "FLYWAY_DBTYPE")]
+      - isSubset:
+          path: spec.template.spec.initContainers[0].env[?(@.name == "FLYWAY_DBTYPE")]
+          content:
+            value: postgresql
+      - exists:
+          path: spec.template.spec.containers[0].env[?(@.name == "PDNS_gpgsql_password")]
+      - isSubset:
+          path: spec.template.spec.containers[0].env[?(@.name == "PDNS_gpgsql_password")].valueFrom.secretKeyRef
+          content:
+            name: test-powerdns-pdns-db
+            key: password
+
+  - it: should render deployment with custom-secrets
+    set:
+      pdns:
+        database:
+          existingSecret: db01-secret
+          secretKey: password-key
+        web:
+          api:
+            existingSecret: api-secret
+            secretKey: secret-key
+
+    template: templates/deployment.yaml
+    asserts:
+      - exists:
+          path: spec.template.spec.initContainers[0].env[?(@.name == "FLYWAY_PASSWORD")]
+      - isSubset:
+          path: spec.template.spec.initContainers[0].env[?(@.name == "FLYWAY_PASSWORD")].valueFrom.secretKeyRef
+          content:
+            name: db01-secret
+            key: password-key
+      - exists:
+          path: spec.template.spec.containers[0].env[?(@.name == "PDNS_gmysql_password")]
+      - isSubset:
+          path: spec.template.spec.containers[0].env[?(@.name == "PDNS_gmysql_password")].valueFrom.secretKeyRef
+          content:
+            name: db01-secret
+            key: password-key
+      - exists:
+          path: spec.template.spec.containers[0].env[?(@.name == "PDNS_api_key")]
+      - isSubset:
+          path: spec.template.spec.containers[0].env[?(@.name == "PDNS_api_key")].valueFrom.secretKeyRef
+          content:
+            name: api-secret
+            key: secret-key

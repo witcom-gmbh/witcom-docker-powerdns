@@ -1,0 +1,8 @@
+set positional-arguments
+
+default_pdns_auth_release := '5.0.2'
+
+docker-build release=default_pdns_auth_release:
+  @echo 'Building for pdns-auth {{release}}'
+  docker build -t pdns-auth-dbinit:{{ release }} .
+  docker tag pdns-auth-dbinit:{{ release }} pdns-auth-dbinit:local-latest

@@ -120,6 +120,7 @@ Fail in case database configuration is not complete
 {{- $failMessageRaw := `
 To configure the database, you have to set:
 
+    - pdns.database.type
     - pdns.database.host
     - pdns.database.port (defaults to 3306)
     - pdns.database.user
@@ -137,6 +138,7 @@ To configure the database, you have to set:
 ` -}}
     {{- $failMessage := printf "\n%s" $failMessageRaw | trimSuffix "\n" -}}
 
+    {{- $_ := required $failMessage .Values.pdns.database.type -}}
     {{- $_ := required $failMessage .Values.pdns.database.host -}}
     {{- $_ := required $failMessage .Values.pdns.database.port -}}
     {{- $_ := required $failMessage .Values.pdns.database.user -}}
@@ -193,3 +195,25 @@ To configure the database-backup, you have to set:
 
 {{- end -}} 
 {{- end -}} 
+
+{{/*
+Return the db-type for flyway-configuration
+*/}}
+{{- define "flyway.databasetype" -}}
+{{- if eq .Values.pdns.database.type "mariadb" -}}
+mariadb
+{{- else -}}
+postgresql
+{{- end -}}
+{{- end -}}
+
+{{/*
+Return the db-type for flyway-configuration
+*/}}
+{{- define "pdns.settings.password" -}}
+{{- if eq .Values.pdns.database.type "mariadb" -}}
+PDNS_gmysql_password
+{{- else -}}
+PDNS_gpgsql_password
+{{- end -}}
+{{- end -}}

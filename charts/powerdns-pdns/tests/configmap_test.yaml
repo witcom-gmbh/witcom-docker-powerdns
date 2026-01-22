@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
+suite: "test deployment"
+templates:
+  - templates/configmap-env-vars.yaml
+values:
+  - values/base.yaml
+release:
+  name: test  
+tests:
+  - it: should render configmap with default web-settings
+    asserts:
+      - notFailedTemplate: {}
+      - isKind:
+          of: ConfigMap
+      - equal:
+          path: metadata.name
+          value: test-powerdns-pdns
+      - equal:
+          path: data.PDNS_webserver
+          value: "yes"
+      - equal:
+          path: data.PDNS_api
+          value: "yes"
+
+  - it: should render configmap with disabled web-settings
+    set:
+      pdns:
+        web:
+          enabled: false
+          apis:
+            enabled: false
+    asserts:
+      - notFailedTemplate: {}
+      - isKind:
+          of: ConfigMap
+      - equal:
+          path: metadata.name
+          value: test-powerdns-pdns
+      - notExists:
+          path: data.PDNS_webserver
+      - notExists:
+          path: data.PDNS_api
+
+
+  - it: should render configmap with default db-settings
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: data.PDNS_launch
+          value: gmysql
+      - equal:
+          path: data.PDNS_gmysql_host
+          value: db01-host
+      - equal:
+          path: data.PDNS_gmysql_port
+          value: "3306"
+      - equal:
+          path: data.PDNS_gmysql_dbname
+          value: powerdns
+      - equal:
+          path: data.PDNS_gmysql_user
+          value: powerdns         
+
+  - it: should render configmap with postgresql-settings
+    set:
+      pdns:
+        database:
+          type: postgresql
+          port: 5432
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: data.PDNS_launch
+          value: gpgsql
+      - equal:
+          path: data.PDNS_gpgsql_host
+          value: db01-host
+      - equal:
+          path: data.PDNS_gpgsql_port
+          value: "5432"
+      - equal:
+          path: data.PDNS_gpgsql_dbname
+          value: powerdns
+      - equal:
+          path: data.PDNS_gpgsql_user
+          value: powerdns                            

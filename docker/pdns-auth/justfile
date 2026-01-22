@@ -1,0 +1,9 @@
+set positional-arguments
+
+default_pdns_auth_release := '5.0.2'
+default_pdns_auth_image := 'powerdns/pdns-auth-50'
+
+docker-build image=default_pdns_auth_image release=default_pdns_auth_release:
+  @echo 'Building from {{image}}:{{release}}'
+  docker build --build-arg PDNS_AUTH_IMAGE={{ image }} --build-arg PDNS_AUTH_RELEASE={{ release }} -t pdns-auth:{{ release }} .
+  docker tag pdns-auth:{{ release }} pdns-auth:local-latest
