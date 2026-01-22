@@ -2,47 +2,36 @@
 
 [![Build Status](https://drone-gh-01.witcom.services/api/badges/witcom-gmbh/witcom-docker-powerdns/status.svg?ref=refs/heads/main)](https://drone-gh-01.witcom.services/witcom-gmbh/witcom-docker-powerdns)
 
-This repository contains Docker images for running PowerDNS - preferably within a container orchestrator like K8S or openshift.
+This repository contains Docker images for running PowerDNS Authorative-Server - preferably within a container orchestrator like K8S.
 
  - **docker-powerdns** contains completely configurable [PowerDNS 4.x server](https://www.powerdns.com/) with database backend (without mysql server).
- - **docker-powerdns-init** contains an init container for creating/upgrading the database schema required for PowerDNS 
+ - **pdns-auth-dbinit** contains an init container for creating/upgrading the database schema required for PowerDNS authorative-server
 
-## docker-powerdns
-Docker image with [PowerDNS 4.x server](https://www.powerdns.com/) and database backend (defaut gmysql) - (without database server).
+## pdns-auth
+Docker image with [PowerDNS authorative server](https://doc.powerdns.com/authoritative) and database backend (defaut gpgsql) - (without database server).
 
-The image is based on the official PowerDNS docke-images (e.g. powerdns/pdns-auth-46:4.6.3)
+The image is based on the official PowerDNS docker-images (e.g. powerdns/pdns-auth-50:5.0.2)
 
-For running, it needs an external database server. Example env vars for mysql configuration:
+For running, it needs an external database server. Example env vars for postgresql configuration:
 ```
-PDNS_gmysql_host=mysql
-PDNS_gmysql_port=3306
-PDNS_gmysql_user=root
-PDNS_gmysql_password=powerdns
-PDNS_gmysql_dbname=powerdns
+PDNS_gpgsql_host=dbhost
+PDNS_gpgsql_port=5432
+PDNS_gpgsql_user=my-user
+PDNS_gpgsql_password=powerdns
+PDNS_gpgsql_dbname=powerdns
 ```
-PowerDNS server is configurable via env vars. Every variable starting with `PDNS_` will be inserted into `/etc/powerdns/pdns.conf` conf file in the following way: prefix `PDNS_` will be stripped and every `_` will be replaced with `-`. For example, from above mysql config, `PDNS_gmysql_host=mysql` will become `gmysql-host=mysql` in `/etc/powerdns/pdns.conf` file. This way, you can configure PowerDNS server any way you need within a `docker run` command.
+PowerDNS server is configurable via env vars. Every variable starting with `PDNS_` will be inserted into `/etc/powerdns/pdns.conf` conf file in the following way: prefix `PDNS_` will be stripped and every `_` will be replaced with `-`. For example, from above mysql config, `PDNS_gpgsql_host=dbhost` will become `gpgsql-host=dbhost` in `/etc/powerdns/pdns.conf` file. This way, you can configure PowerDNS server any way you need within a `docker run` command.
 
 You can find all available settings [here](https://doc.powerdns.com/md/authoritative/).
 
 ### Non-Root container
 docker-powerdns is designed to run as non-root user, and can handle arbitrary uids.
 
-## docker-powerdns-init
-An init container for PowerDNS that handles database schema migrations. It is based on [flywaydb](https://flywaydb.org/).
-The container can be either run as init container in K8S/Openshift, or as a standalone container to prepare an existing database.
-The init-script is configured from environment-variables only. Here are the default values
+## pdns-auth-dbinit
+An init container for PowerDNS that handles database schema migrations.
+For details see [flywaydb](./docker/pdns-auth-dbinit/README.md).
 
-```
-FLYWAY_DRIVER="org.mariadb.jdbc.Driver"
-FLYWAY_DBTYPE=mysql
-FLYWAY_DBHOST=localhost
-FLYWAY_DBPORT=3306
-FLYWAY_DBNAME=powerdns
-FLYWAY_USER=
-FLYWAY_PASSWORD=
-```
-
-### example k8s deployment
+### Example k8s deployment
 Here is an example for an K8S deployment. Both containers are using the same secret to connect to the database. 
 
 Better use the [helm-chart](charts/powerdns-pdns/README.md)
@@ -106,52 +95,13 @@ Better use the [helm-chart](charts/powerdns-pdns/README.md)
                 secretKeyRef:
                   key: database-password
                   name: mariadb
-          image: image: docker-powerdns-init:4.3.0
-          imagePullPolicy: Always
+          image: image: pdns-auth-dbinit:5.0.2
           name: init-powerdns-flyway
 ```
 ### Non-Root container
 docker-powerdns-init is designed to run as non-root user, and can handle arbitrary uids.
 
 ## Development
-
-### Local tests with minikube
-
-If running behind a corporate web-proxy -> https://minikube.sigs.k8s.io/docs/handbook/vpn_and_proxy/#x509-certificate-signed-by-unknown-authority
-
-Solution: Add CA-Certs to ~/.minikube/certs
-
-```console
-minikube start
-```
-
-#### Build images
-
-```console
-export PDNS_INIT_IMAGE=pdns-auth-ginit:local-latest
-export PDNS_IMAGE=pdns-auth:local-latest
-cd docker-powerdns-init
-docker build . -t ${PDNS_INIT_IMAGE}
-cd ..
-cd docker-powerdns
-docker build --build-arg PDNS_AUTH_IMAGE=powerdns/pdns-auth-47 --build-arg PDNS_AUTH_RELEASE=4.7.4 . -t ${PDNS_IMAGE}
-cd ..
-```
-
-#### Push images to minikube
-
-```console
-minikube image load ${PDNS_INIT_IMAGE}
-minikube image load ${PDNS_IMAGE}
-```
-
-Watch out: This does not seem to update images. So either use different tags or delete images before pushing them again.
-
-#### Deploy MariaDB-Instance
-
-```console
-helm install db01 oci://registry-1.docker.io/bitnamicharts/mariadb -f ./tests/helm-mariadb.yml
-```
 
 #### Test helm
 
@@ -162,16 +112,19 @@ helm install pdns-01 ./ -f ./tests/helm-pdns-01.yml
 
 ### Local tests with docker
 
+Example for mariadb
+
 ```console
 docker network create --driver bridge pdns-net
 docker run --network pdns-net --detach --name some-mariadb --env MARIADB_USER=example-user --env MARIADB_PASSWORD=my_cool_secret --env MARIADB_ROOT_PASSWORD=my-secret-pw  -e MARIADB_DATABASE=powerdns  mariadb:latest
-cd docker-powerdns-init
-docker build --build-arg PDNS_AUTH_IMAGE=powerdns/pdns-auth-47 --build-arg PDNS_AUTH_RELEASE=4.7.4 . -t pdns-auth-ginit:local-latest
+cd docker/pdns-auth-dbinit
+just docker-build
 cd ..
-docker run --rm -e FLYWAY_DBHOST=some-mariadb -e FLYWAY_USER=example-user -e FLYWAY_PASSWORD=my_cool_secret --network pdns-net pdns-auth-ginit:local-latest
-cd docker-powerdns
-docker build --build-arg PDNS_AUTH_IMAGE=powerdns/pdns-auth-47 --build-arg PDNS_AUTH_RELEASE=4.7.4 . -t pdns-auth:local-latest
+cd pdns-auth
+just docker-build
 cd ..
+
+docker run --rm -e FLYWAY_DBHOST=some-mariadb -e FLYWAY_USER=example-user -e FLYWAY_PASSWORD=my_cool_secret --network pdns-net pdns-auth-dbinit:local-latest
 docker run --rm --name pdns-auth \
   -e PDNS_gmysql_host=some-mariadb \
   -e PDNS_gmysql_user=example-user \
@@ -191,27 +144,35 @@ docker rm -f some-mariadb
 docker network rm pdns-net
 ```
 
-### Bump PowerDNS Version
+## Bump PowerDNS Version
 
-* Test build 
+### Test build 
+
+If there are database-schema-changes, add them to the initdb-container !
 
 ```console
-cd docker-powerdns
-docker build --build-arg PDNS_AUTH_IMAGE=powerdns/pdns-auth-49 --build-arg PDNS_AUTH_RELEASE=4.9.1 . -t pdns-auth-witcom:latest
-docker run --rm -e PDNS_launch=gsqlite3 -e PDNS_gsqlite3_database=/var/lib/powerdns/pdns.sqlite3 pdns-auth-witcom:latest
+export PDNS_IMAGE=powerdns/pdns-auth-50
+export PDNS_RELEASE=5.0.2
+cd docker/pdns-auth-dbinit
+just docker-build $PDNS_RELEASE
+cd ../pdns-auth
+just docker-build $PDNS_IMAGE $PDNS_RELEASE
 ```
 
-* Adjust env-variables configuration in `.drone.yml`
+Test like described above
+
+### Prepare for build
+
+Adjust env-variables configuration in `.drone.yml`, e.g.
 
 ```yaml
 global-variables:
   environment: &default_environment
-    PDNS_AUTH_RELEASE: 4.6.3
-    PDNS_AUTH_IMAGE: powerdns/pdns-auth-46
+    PDNS_AUTH_RELEASE: 5.0.2
+    PDNS_AUTH_IMAGE: powerdns/pdns-auth-50
     ...
 ```
 
-* If there are database-schema-changes, add them to the init-container
 * Bump application-version in [helm-chart](charts/powerdns-pdns/Chart.yaml)
 * Commit changes - choose commit-type according to version bump, e.g. patch-release is an improvement/fix, minor-release is a feature, ...
 

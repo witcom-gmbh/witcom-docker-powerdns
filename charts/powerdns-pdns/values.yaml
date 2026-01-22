@@ -5,13 +5,13 @@
 replicaCount: 1
 
 image:
-  repository: artifactory.witcom.services/powerdns/pdns
+  repository: artifactory.witcom.services/powerdns/pdns-auth
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
 initImage:
-  repository: artifactory.witcom.services/powerdns/pdns-gmysql-init
+  repository: artifactory.witcom.services/powerdns/pdns-auth-dbinit
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
@@ -66,7 +66,7 @@ service:
     #  metallb.universe.tf/allow-shared-ip: public-dns    
 
 ingress:
-  enabled: true
+  enabled: false
   className: ""
   annotations: {}
     # kubernetes.io/ingress.class: nginx
@@ -95,6 +95,9 @@ resources: {}
 
 pdns:
   database:
+    # -- database-type for powerdns-database. Defaults to mariadb for backwards-compatibility. Possible values `mariadb` or `postgresql`
+    # @section -- Database configuration
+    type: "mariadb"
     # -- database-host for powerdns-database
     # @section -- Database configuration
     host: ""
@@ -174,9 +177,6 @@ pdns:
       # -- Initialize PowerDNS-Database with init-container
       # @section -- Database initialization
       enabled: true
-      # -- Should an existing database be initialized. See https://documentation.red-gate.com/fd/baseline-on-migrate-224919695.html
-      # @section -- Database initialization
-      baseline: "false"
   web:
     # -- Wether to enable powerdns-web-access
     # @section -- Web-Access

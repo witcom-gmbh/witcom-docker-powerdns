@@ -1,4 +1,4 @@
-{{ include "database.isConfigured" . }}
+{{- include "database.isConfigured" . -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -35,8 +35,8 @@ spec:
       {{ if .Values.pdns.database.init.enabled -}}
       initContainers:
         - env:
-            - name: FLYWAY_BASELINE_ON_MIGRATE
-              value: {{ .Values.pdns.database.init.baseline | quote }}
+            - name: FLYWAY_DBTYPE
+              value: {{ include "flyway.databasetype" . | quote }}
             - name: FLYWAY_DBHOST
               value: {{ .Values.pdns.database.host }}
             - name: FLYWAY_DBNAME
@@ -59,7 +59,7 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-          - name: PDNS_gmysql_password
+          - name: {{ include "pdns.settings.password" . }}
             valueFrom:
               secretKeyRef:
                 key: {{ .Values.pdns.database.secretKey }}

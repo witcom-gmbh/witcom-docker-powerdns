@@ -5,10 +5,19 @@ metadata:
   labels:
     {{- include "powerdns-pdns.labels" . | nindent 4 }}
 data:
+  {{ if eq .Values.pdns.database.type "mariadb" -}}
+  PDNS_launch: gmysql
   PDNS_gmysql_host: {{ .Values.pdns.database.host }}
-  PDNS_gmysql_port: {{ .Values.pdns.database.port | quote }}
+  PDNS_gmysql_port: {{ .Values.pdns.database.port | default 3306 | quote }}
   PDNS_gmysql_dbname: {{ .Values.pdns.database.db }}
   PDNS_gmysql_user: {{ .Values.pdns.database.user }}
+  {{- else -}}
+  PDNS_launch: gpgsql
+  PDNS_gpgsql_host: {{ .Values.pdns.database.host }}
+  PDNS_gpgsql_port: {{ .Values.pdns.database.port | default 5432 | quote }}
+  PDNS_gpgsql_dbname: {{ .Values.pdns.database.db }}
+  PDNS_gpgsql_user: {{ .Values.pdns.database.user }}
+  {{- end }}  
   {{ if .Values.pdns.web.enabled -}}
   PDNS_webserver: "yes"
   PDNS_webserver_address: "0.0.0.0"

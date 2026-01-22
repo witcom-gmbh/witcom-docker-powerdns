@@ -1,7 +1,7 @@
 global-variables:
   environment: &default_environment
-    PDNS_AUTH_RELEASE: 4.9.1
-    PDNS_AUTH_IMAGE: powerdns/pdns-auth-49
+    PDNS_AUTH_RELEASE: 5.0.2
+    PDNS_AUTH_IMAGE: powerdns/pdns-auth-50
     REGISTRY:
       from_secret: artifactory-host-01
     REGISTRY_HELM_PROJECT:  
@@ -11,8 +11,8 @@ global-variables:
     PASSWORD:
       from_secret: artifactory-password-01
     REGISTRY_ORG: powerdns
-    REGISTRY_ARTIFACT_PDNS: pdns
-    REGISTRY_ARTIFACT_PDNS_INIT: pdns-gmysql-init
+    REGISTRY_ARTIFACT_PDNS: pdns-auth
+    REGISTRY_ARTIFACT_PDNS_INIT: pdns-auth-dbinit
 
 kind: pipeline
 type: docker
@@ -23,13 +23,14 @@ platform:
 
 steps:
 
-  - name: Lint helm chart
-    image: alpine/helm:3.15.2
+  - name: Test helm chart
+    image: alpine/helm:3.19
     environment:
       <<: *default_environment
     commands:
-    - echo "Linting helm chart"
-    - cd ./charts/powerdns-pdns && helm dependency update && helm lint
+    - echo "Install helm-unittest" && helm plugin install https://github.com/helm-unittest/helm-unittest.git 
+    - echo "Testing helm chart"
+    - cd ./charts/powerdns-pdns && helm dependency update && helm unittest -s=false .
 
   - name: Prepare registry secrets
     image: alpine
@@ -42,7 +43,7 @@ steps:
     commands:
     - echo "$DOCKER_CONFIG" > /dockerconfig/config.json
 
-  - name: Build powerdns-pdns init-image and push to latest
+  - name: Build DB init-image and push to latest
     image: gcr.io/kaniko-project/executor:debug
     environment:
       <<: *default_environment
@@ -52,8 +53,8 @@ steps:
     commands:
     - >
       /kaniko/executor 
-      --context ./docker-powerdns-init
-      --dockerfile ./docker-powerdns-init/Dockerfile
+      --context ./docker/pdns-auth-dbinit
+      --dockerfile /docker/pdns-auth-dbinit/Dockerfile
       --destination $${REGISTRY}/$${REGISTRY_ORG}/$${REGISTRY_ARTIFACT_PDNS_INIT}:latest
     when:
       event:
@@ -64,7 +65,7 @@ steps:
       branch:
       - main
 
-  - name: Build powerdns-pdns image and push to latest
+  - name: Build pdns-auth image and push to latest
     image: gcr.io/kaniko-project/executor:debug
     environment:
       <<: *default_environment
@@ -74,10 +75,10 @@ steps:
     commands:
     - >
       /kaniko/executor 
-      --context ./docker-powerdns
+      --context ./docker/pdns-auth
       --build-arg PDNS_AUTH_RELEASE=$${PDNS_AUTH_RELEASE}
       --build-arg PDNS_AUTH_IMAGE=$${PDNS_AUTH_IMAGE}
-      --dockerfile ./docker-powerdns/Dockerfile
+      --dockerfile ./docker/pdns-auth/Dockerfile
       --destination $${REGISTRY}/$${REGISTRY_ORG}/$${REGISTRY_ARTIFACT_PDNS}:latest
     when:
       event:
@@ -88,7 +89,7 @@ steps:
       branch:
       - main
 
-  - name: Build and release powerdns-pdns init-image
+  - name: Build and release DB init-image
     image: gcr.io/kaniko-project/executor:debug
     environment:
       <<: *default_environment
@@ -98,8 +99,8 @@ steps:
     commands:
     - >
       /kaniko/executor 
-      --context ./docker-powerdns-init
-      --dockerfile ./docker-powerdns-init/Dockerfile
+      --context ./docker/pdns-auth-dbinit
+      --dockerfile ./docker/pdns-auth-dbinit/Dockerfile
       --destination $${REGISTRY}/$${REGISTRY_ORG}/$${REGISTRY_ARTIFACT_PDNS_INIT}:latest
       --destination $${REGISTRY}/$${REGISTRY_ORG}/$${REGISTRY_ARTIFACT_PDNS_INIT}:v$${PDNS_AUTH_RELEASE}
     when:
@@ -108,7 +109,7 @@ steps:
       ref:
       - refs/tags/* 
 
-  - name: Build and release powerdns-pdns image
+  - name: Build and release pdns-auth image
     image: gcr.io/kaniko-project/executor:debug
     environment:
       <<: *default_environment
@@ -118,10 +119,10 @@ steps:
     commands:
     - >
       /kaniko/executor 
-      --context ./docker-powerdns
+      --context ./docker/pdns-auth
       --build-arg PDNS_AUTH_RELEASE=$${PDNS_AUTH_RELEASE}
       --build-arg PDNS_AUTH_IMAGE=$${PDNS_AUTH_IMAGE}
-      --dockerfile ./docker-powerdns/Dockerfile
+      --dockerfile ./docker/pdns-auth/Dockerfile
       --destination $${REGISTRY}/$${REGISTRY_ORG}/$${REGISTRY_ARTIFACT_PDNS}:latest
       --destination $${REGISTRY}/$${REGISTRY_ORG}/$${REGISTRY_ARTIFACT_PDNS}:v$${PDNS_AUTH_RELEASE}
     when:
@@ -131,7 +132,7 @@ steps:
       - refs/tags/* 
 
   - name: Package and deploy chart
-    image: alpine/helm:3.15.2
+    image: alpine/helm:3.19
     environment:
       <<: *default_environment
     commands:
