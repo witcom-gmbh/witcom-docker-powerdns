@@ -54,7 +54,7 @@ steps:
     - >
       /kaniko/executor 
       --context ./docker/pdns-auth-dbinit
-      --dockerfile /docker/pdns-auth-dbinit/Dockerfile
+      --dockerfile ./docker/pdns-auth-dbinit/Dockerfile
       --destination $${REGISTRY}/$${REGISTRY_ORG}/$${REGISTRY_ARTIFACT_PDNS_INIT}:latest
     when:
       event:
