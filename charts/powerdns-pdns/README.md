@@ -2,7 +2,7 @@
 
 PowerDNS authorative dns-server
 
-![Version: 1.2.0](https://img.shields.io/badge/Version-1.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: v5.0.2](https://img.shields.io/badge/AppVersion-v5.0.2-informational?style=flat-square)
+![Version: 2.0.0](https://img.shields.io/badge/Version-2.0.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: v5.0.2](https://img.shields.io/badge/AppVersion-v5.0.2-informational?style=flat-square)
 
 ## TL;DR
 
@@ -14,18 +14,16 @@ $ helm install my-release oci://artifactory.witcom.services/witcom-charts/powerd
 
 This chart bootstraps a [PowerDNS](https://www.powerdns.com/auth.html) authorative DNS service on a [Kubernetes](https://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
 
-The PowerDNS instance is backed by MariaDB and  therefore needs a running MarieDB instance, e.g. https://github.com/bitnami/charts/blob/master/bitnami/mariadb
+The PowerDNS instance is backed by a relational-database needs any db-instance.
 
 ## Prerequisites
 
 - Kubernetes 1.19+
 - Helm 3.2.0+
-- Running instance of mariadb
-- PV provisioner support in the underlying infrastructure
 
 ## Optional requirements
 
-- Loadbalancer for accessing DNS-Services from outside of the cluster (if running on bare-metal take a look at https://metallb.universe.tf/)
+- Loadbalancer for accessing DNS-Services from outside of the cluster
 - CNI that supports networkpolicies
 
 ## Installing the Chart
@@ -244,7 +242,7 @@ pdns:
 | service.tcp.enabled | bool | `true` |  |
 | service.tcp.type | string | `"ClusterIP"` |  |
 | service.tcp.annotations | object | `{}` |  |
-| ingress.enabled | bool | `true` |  |
+| ingress.enabled | bool | `false` |  |
 | ingress.className | string | `""` |  |
 | ingress.annotations | object | `{}` |  |
 | ingress.hosts[0].host | string | `"chart-example.local"` |  |

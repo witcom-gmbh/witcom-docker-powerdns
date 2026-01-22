@@ -2,6 +2,15 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v2.0.0 - 2026-01-22
+#### Features
+- <span style="background-color: #d73a49; color: white; padding: 2px 6px; border-radius: 3px; font-weight: bold; font-size: 0.85em;">BREAKING</span>Major rework - (f2ac6c9) - *iceman91176*
+#### Build system
+- Refactors devcontainer - (3dddc9c) - *iceman91176*
+- Updates devcontainer environment - (78e3a02) - *iceman91176*
+
+- - -
+
 ## v1.2.0 - 2024-06-19
 #### Features
 - Bump powerdns to 4.9.1 - (8da6d9b) - iceman91176
